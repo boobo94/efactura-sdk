@@ -255,6 +255,26 @@ export interface Party {
 }
 
 /**
+ * The type of invoice. Usually invoices are sent for Comercial purposes
+ * Referernce: https://github.com/OpenPEPPOL/peppol-bis-invoice-3/blob/master/guide/transaction-spec/codes/invoice-types-en.adoc
+ */
+export enum InvoiceTypeCode {
+  /**
+   * Commercial invoice
+   * Document/message claiming payment for goods or services supplied under conditions agreed between seller and buyer.
+   */
+  COMMERCIAL_INVOICE = '380',
+
+  /**
+   * Invoice information for accounting purposes
+   * A document / message containing accounting related information such as monetary summations, seller id and VAT information.
+   * This may not be a complete invoice according to legal requirements.
+   * For instance the line item information might be excluded.
+   */
+  INVOICE_INFORMAtION_FOR_ACCOUNTING_PURPOSES = '751',
+}
+
+/**
  * Invoice line item
  */
 export interface InvoiceLine {
@@ -276,6 +296,8 @@ export interface InvoiceLine {
  * Complete invoice data for UBL generation
  */
 export interface InvoiceInput {
+  /** Invoice type code to define */
+  invoiceTypeCode?: InvoiceTypeCode;
   /** Invoice number */
   invoiceNumber: string;
   /** Issue date */

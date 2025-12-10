@@ -92,6 +92,7 @@ const builder = new UblBuilder();
 
 const xml = builder.generateInvoiceXml({
   invoiceNumber: 'INV-2024-001',
+  invoiceTypeCode: '380',
   issueDate: new Date(),
   supplier: {
     registrationName: 'Company SRL',
@@ -242,6 +243,7 @@ const tokens = await auth.exchangeCodeForToken(authCode);
 // 3. Generate invoice XML using fetched company data
 const xml = builder.generateInvoiceXml({
   invoiceNumber: 'INV-2024-001',
+  invoiceTypeCode: '380',
   issueDate: new Date(),
   supplier: {
     registrationName: 'My Company SRL',
@@ -291,7 +293,6 @@ if (status.id_descarcare) {
 ### Prerequisites
 
 1. **USB Security Token**: Required for ANAF authentication
-
    - Supported tokens: Any qualified certificate from Romanian CA
    - Install manufacturer drivers (SafeNet, Gemalto, etc.)
    - Certificate must be registered with ANAF SPV
@@ -333,7 +334,6 @@ For local testing, you need a public HTTPS URL for OAuth callbacks:
    ```
 
 3. **Update OAuth Settings**:
-
    - Copy the ngrok HTTPS URL (e.g., `https://abc123.ngrok.io`)
    - Register callback URL: `https://abc123.ngrok.io/oauth/callback`
    - Update your AnafAuthenticator configuration:
@@ -358,7 +358,6 @@ The complete OAuth flow with USB token authentication:
    ```
 
 2. **User Authentication Process**:
-
    - User clicks/visits the authorization URL
    - ANAF login page opens
    - **Insert USB Token**: User inserts USB security token
@@ -429,7 +428,6 @@ The test suite includes a helpful OAuth testing flow:
 3. **Get OAuth URL**: Test displays authorization URL in console
 
 4. **Complete OAuth**:
-
    - Copy URL to browser
    - Insert USB token when prompted
    - Enter PIN and select certificate
@@ -608,7 +606,6 @@ import type { InvoiceInput, UploadStatus, ListMessagesResponse, ValidationResult
 When deploying to production:
 
 1. **Register Production OAuth App**:
-
    - Use your production domain for callback URL
    - Get separate client credentials for production
 
@@ -622,7 +619,6 @@ When deploying to production:
    ```
 
 3. **Secure Callback Handling**:
-
    - Use HTTPS for all OAuth callbacks
    - Validate state parameter
    - Implement CSRF protection

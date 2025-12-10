@@ -6,14 +6,9 @@ import {
   Party,
   Address,
   UblInvoiceInput, // Legacy compatibility
+  InvoiceTypeCode,
 } from '../types';
-import {
-  UBL_CUSTOMIZATION_ID,
-  INVOICE_TYPE_CODE,
-  DEFAULT_CURRENCY,
-  DEFAULT_COUNTRY_CODE,
-  DEFAULT_UNIT_CODE,
-} from '../constants';
+import { UBL_CUSTOMIZATION_ID, DEFAULT_CURRENCY, DEFAULT_COUNTRY_CODE, DEFAULT_UNIT_CODE } from '../constants';
 import { formatDateForAnaf } from '../utils/dateUtils';
 import { AnafValidationError } from '../errors';
 
@@ -308,6 +303,7 @@ export function buildInvoiceXml(input: InvoiceInput): string {
   // Set defaults
   const currency = input.currency || DEFAULT_CURRENCY;
   const isSupplierVatPayer = input.isSupplierVatPayer ?? !!input.supplier.vatNumber;
+  const invoiceTypeCode = input.invoiceTypeCode || InvoiceTypeCode.COMMERCIAL_INVOICE;
 
   // Format dates
   const issueDate = formatDateForAnaf(input.issueDate);
@@ -341,7 +337,7 @@ export function buildInvoiceXml(input: InvoiceInput): string {
     .txt(dueDate)
     .up()
     .ele('cbc:InvoiceTypeCode')
-    .txt(INVOICE_TYPE_CODE)
+    .txt(invoiceTypeCode)
     .up()
     .ele('cbc:DocumentCurrencyCode')
     .txt(currency)

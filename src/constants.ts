@@ -157,11 +157,6 @@ export const DEFAULT_UNIT_CODE = 'EA'; // Each
  */
 export const UBL_CUSTOMIZATION_ID = 'urn:cen.eu:en16931:2017#compliant#urn:efactura.mfinante.ro:CIUS-RO:1.0.1';
 
-/**
- * Default invoice type code (Commercial Invoice)
- */
-export const INVOICE_TYPE_CODE = '380';
-
 // =============================================================================
 // Helper Functions for URL Construction
 // =============================================================================
