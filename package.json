@@ -78,13 +78,13 @@
     "test:unit": "jest tests/*.unit.test.ts --verbose",
     "test:integration": "jest tests/*.integration.test.ts --verbose --runInBand",
     "test:auth": "jest tests/auth.integration.test.ts --verbose",
-    "test:all": "pnpm run test:unit && pnpm run test:integration",
-    "validate": "pnpm run lint:check && pnpm run lint:check && pnpm run test:ci",
-    "prepublishOnly": "pnpm run validate",
-    "prepack": "pnpm run build",
-    "postpack": "pnpm run clean",
-    "release": "pnpm run validate && pnpm publish",
-    "release:dry": "pnpm run validate && pnpm publish --dry-run"
+    "test:all": "yarn run test:unit && yarn run test:integration",
+    "validate": "yarn run lint:check && yarn run lint:check && yarn run test:ci",
+    "prepublishOnly": "yarn run validate",
+    "prepack": "yarn run build",
+    "postpack": "yarn run clean",
+    "release": "yarn run validate && yarn publish",
+    "release:dry": "yarn run validate && yarn publish --dry-run"
   },
   "dependencies": {
     "date-fns": "^3.6.0",

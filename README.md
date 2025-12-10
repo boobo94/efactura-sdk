@@ -16,7 +16,7 @@ A comprehensive TypeScript SDK for interacting with the Romanian ANAF e-Factura 
 ## Installation
 
 ```bash
-pnpm add anaf-ts-sdk
+yarn add anaf-ts-sdk
 ```
 
 ## Quick Start
@@ -404,13 +404,13 @@ The SDK includes comprehensive Jest tests with an integrated OAuth flow:
 
 ```bash
 # Run all tests
-pnpm test
+yarn test
 
 # Run OAuth authentication tests with callback server
-pnpm test:auth
+yarn test:auth
 
 # Run tests with coverage
-pnpm test:coverage
+yarn test:coverage
 ```
 
 ### Manual OAuth Testing
@@ -420,7 +420,7 @@ The test suite includes a helpful OAuth testing flow:
 1. **Start Test**:
 
    ```bash
-   pnpm test:auth
+   yarn test:auth
    ```
 
 2. **Callback Server**: Automatically starts on `http://localhost:4040`
