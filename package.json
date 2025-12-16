@@ -1,6 +1,6 @@
 {
   "name": "efactura-sdk",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Complete TypeScript SDK for Romanian ANAF API -E-Factura, Company checks",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -52,9 +52,9 @@
     "fiscal"
   ],
   "author": {
-    "name": "Florin Szilagyi",
-    "email": "florin.szilagyi@example.com",
-    "url": "https://github.com/florin-szilagyi"
+    "name": "Bogdan Alexandru Militaru",
+    "email": "militaru.bogdanalexandru@gmail.com",
+    "url": "https://github.com/boobo94"
   },
   "license": "MIT",
   "engines": {
@@ -118,10 +118,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  },
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/florin-szilagyi"
   },
   "jest": {
     "preset": "ts-jest",
