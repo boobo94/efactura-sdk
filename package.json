@@ -1,6 +1,6 @@
 {
   "name": "efactura-sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Complete TypeScript SDK for Romanian ANAF API -E-Factura, Company checks",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -140,10 +140,10 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 30,
-        "functions": 30,
-        "lines": 30,
-        "statements": 30
+        "branches": 50,
+        "functions": 80,
+        "lines": 70,
+        "statements": 70
       }
     }
   }
