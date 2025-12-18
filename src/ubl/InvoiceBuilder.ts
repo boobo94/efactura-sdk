@@ -11,6 +11,8 @@ import {
 import { UBL_CUSTOMIZATION_ID, DEFAULT_CURRENCY, DEFAULT_COUNTRY_CODE, DEFAULT_UNIT_CODE } from '../constants';
 import { formatDateForAnaf } from '../utils/dateUtils';
 import { AnafValidationError } from '../errors';
+import { normalizeVatNumber } from '../utils/validators';
+import { isBucharest, sanitizeBucharestSector, sanitizeCounty } from './address-sanitizer';
 
 /**
  * Enhanced UBL 2.1 Invoice Builder for ANAF e-Factura
@@ -37,6 +39,10 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
   const partyElement = root.ele(tagName).ele('cac:Party');
   const address = party.address;
 
+  const county = sanitizeCounty(address.county);
+  // Determine city value based on whether it's Bucharest or not
+  const city = isBucharest(county) ? sanitizeBucharestSector(address.city) : address.city;
+
   // Postal Address
   partyElement
     .ele('cac:PostalAddress')
@@ -44,13 +50,13 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
     .txt(address.street || '')
     .up()
     .ele('cbc:CityName')
-    .txt(address.city || '')
+    .txt(city || '')
     .up()
     .ele('cbc:PostalZone')
     .txt(address.postalZone || '')
     .up()
     .ele('cbc:CountrySubentity')
-    .txt(address.county || '')
+    .txt(county || '')
     .up()
     .ele('cac:Country')
     .ele('cbc:IdentificationCode')
@@ -58,6 +64,21 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
     .up()
     .up()
     .up();
+
+  // Party Tax Scheme (if VAT number provided)
+  if (party.vatNumber) {
+    partyElement
+      .ele('cac:PartyTaxScheme')
+      .ele('cbc:CompanyID')
+      .txt(normalizeVatNumber(party.vatNumber))
+      .up()
+      .ele('cac:TaxScheme')
+      .ele('cbc:ID')
+      .txt('VAT')
+      .up()
+      .up()
+      .up();
+  }
 
   // Party Legal Entity
   partyElement
@@ -69,21 +90,6 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
     .txt(party.companyId)
     .up()
     .up();
-
-  // Party Tax Scheme (if VAT number provided)
-  if (party.vatNumber) {
-    partyElement
-      .ele('cac:PartyTaxScheme')
-      .ele('cbc:CompanyID')
-      .txt(party.vatNumber)
-      .up()
-      .ele('cac:TaxScheme')
-      .ele('cbc:ID')
-      .txt('VAT')
-      .up()
-      .up()
-      .up();
-  }
 }
 
 /**
@@ -231,8 +237,8 @@ function validateAddress(address: Address, role: string): void {
  * @param index Line index for error messages
  */
 function validateLine(line: InvoiceLine, index: number): void {
-  if (!line.description?.trim()) {
-    throw new AnafValidationError(`Line ${index + 1}: Description is required`);
+  if (!line.name?.trim()) {
+    throw new AnafValidationError(`Line ${index + 1}: Name is required`);
   }
 
   if (typeof line.quantity !== 'number' || line.quantity <= 0) {
@@ -467,9 +473,16 @@ export function buildInvoiceXml(input: InvoiceInput): string {
       .txt(lineExtension.toFixed(2))
       .up()
       .ele('cac:Item')
-      .ele('cbc:Description')
-      .txt(line.description)
-      .up()
+      .ele('cbc:Name')
+      .txt(line.name)
+      .up();
+
+    // Add description if present
+    if (line.description) {
+      lineElement.ele('cbc:Description').txt(line.description).up();
+    }
+
+    lineElement
       .ele('cac:ClassifiedTaxCategory')
       .ele('cbc:ID')
       .txt(lineTaxCategory)

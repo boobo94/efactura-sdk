@@ -1,6 +1,7 @@
 import { UblBuilder } from '../src/UblBuilder';
 import { InvoiceInput } from '../src/types';
 import { mockTestData, testFileUtils, testDataGenerators } from './testUtils';
+import { sanitizeCounty, sanitizeBucharestSector, isBucharest } from '../src/ubl/address-sanitizer';
 
 describe('UblBuilder Tests', () => {
   let builder: UblBuilder;
@@ -105,7 +106,8 @@ describe('UblBuilder Tests', () => {
         ...mockTestData.invoiceData,
         lines: [
           {
-            description: 'Test Product',
+            name: 'Test Product',
+            description: 'Test Product Description',
             quantity: 2,
             unitPrice: 150.5,
             taxPercent: 19,
@@ -116,6 +118,7 @@ describe('UblBuilder Tests', () => {
       const xml = builder.generateInvoiceXml(invoiceData);
 
       expect(xml).toContain('Test Product');
+      expect(xml).toContain('Test Product Description');
       expect(xml).toContain('2'); // quantity
       expect(xml).toContain('150.50'); // unit price
       expect(xml).toContain('19'); // tax percent
@@ -126,18 +129,40 @@ describe('UblBuilder Tests', () => {
       expect(xml).toContain('358.19'); // total with tax
     });
 
+    test('should use provided item name when present', () => {
+      const invoiceData: InvoiceInput = {
+        ...mockTestData.invoiceData,
+        lines: [
+          {
+            name: 'Short Name',
+            description: 'Longer description',
+            quantity: 1,
+            unitPrice: 10,
+            taxPercent: 19,
+          },
+        ],
+      };
+
+      const xml = builder.generateInvoiceXml(invoiceData);
+
+      expect(xml).toContain('<cbc:Name>Short Name</cbc:Name>');
+      expect(xml).toContain('Longer description');
+    });
+
     test('should handle multiple invoice lines correctly', () => {
       const invoiceData: InvoiceInput = {
         ...mockTestData.invoiceData,
         lines: [
           {
-            description: 'Product 1',
+            name: 'Product 1',
+            description: 'Product 1 Description',
             quantity: 1,
             unitPrice: 100,
             taxPercent: 19,
           },
           {
-            description: 'Product 2',
+            name: 'Product 2',
+            description: 'Product 2 Description',
             quantity: 2,
             unitPrice: 50,
             taxPercent: 19,
@@ -258,7 +283,7 @@ describe('UblBuilder Tests', () => {
         ...mockTestData.invoiceData,
         lines: [
           {
-            description: 'Free Service',
+            name: 'Free Service',
             quantity: 1,
             unitPrice: 0,
             taxPercent: 19,
@@ -278,6 +303,7 @@ describe('UblBuilder Tests', () => {
         ...mockTestData.invoiceData,
         lines: [
           {
+            name: 'Long Description Item',
             description: longDescription,
             quantity: 1,
             unitPrice: 100,
@@ -288,6 +314,7 @@ describe('UblBuilder Tests', () => {
 
       const xml = builder.generateInvoiceXml(invoiceData);
 
+      expect(xml).toContain('Long Description Item');
       expect(xml).toContain(longDescription);
       expect(xml).toBeDefined();
     });
@@ -300,6 +327,7 @@ describe('UblBuilder Tests', () => {
           ...mockTestData.invoiceData,
           lines: [
             {
+              name: `Item with ${taxRate}% tax`,
               description: `Item with ${taxRate}% tax`,
               quantity: 1,
               unitPrice: 100,
@@ -320,6 +348,7 @@ describe('UblBuilder Tests', () => {
         ...mockTestData.invoiceData,
         lines: [
           {
+            name: 'Precision Test',
             description: 'Precision Test',
             quantity: 3,
             unitPrice: 33.333333,
@@ -342,6 +371,7 @@ describe('UblBuilder Tests', () => {
         ...mockTestData.invoiceData,
         lines: [
           {
+            name: 'Test Item',
             description: 'Test Item',
             quantity: 5,
             unitPrice: 20.5,
@@ -367,12 +397,14 @@ describe('UblBuilder Tests', () => {
         ...mockTestData.invoiceData,
         lines: [
           {
+            name: 'Item with 19% VAT',
             description: 'Item with 19% VAT',
             quantity: 1,
             unitPrice: 100,
             taxPercent: 19,
           },
           {
+            name: 'Item with 9% VAT',
             description: 'Item with 9% VAT',
             quantity: 1,
             unitPrice: 100,
@@ -432,6 +464,7 @@ describe('UblBuilder Tests', () => {
       const largeInvoiceData: InvoiceInput = {
         ...mockTestData.invoiceData,
         lines: Array.from({ length: 100 }, (_, i) => ({
+          name: `Item ${i + 1}`,
           description: `Item ${i + 1}`,
           quantity: Math.floor(Math.random() * 10) + 1,
           unitPrice: Math.round(Math.random() * 1000 * 100) / 100,
@@ -446,6 +479,172 @@ describe('UblBuilder Tests', () => {
       expect(xml).toBeDefined();
       expect(xml.length).toBeGreaterThan(1000);
       expect(duration).toBeLessThan(500); // Should complete in reasonable time
+    });
+  });
+
+  describe('Address Sanitizer', () => {
+    describe('sanitizeCounty', () => {
+      describe('null/undefined/empty handling', () => {
+        test.each([
+          [null, null],
+          [undefined, null],
+          ['', null],
+          ['   ', null],
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input as any)).toBe(expected);
+        });
+      });
+
+      describe('direct county matches (basic)', () => {
+        test.each([
+          ['cluj', 'RO-CJ'],
+          ['Alba', 'RO-AB'],
+          ['IASI', 'RO-IS'],
+          ['ilfov', 'RO-IF'],
+          ['botosani', 'RO-BT'],
+          ['buzau', 'RO-BZ'],
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input)).toBe(expected);
+        });
+      });
+
+      describe('diacritics + casing normalization', () => {
+        test.each([
+          ['Iași', 'RO-IS'],
+          ['Dâmbovița', 'RO-DB'],
+          ['Timiș', 'RO-TM'],
+          ['Vâlcea', 'RO-VL'],
+          // also accepts cedilla variants / legacy forms because normalize removes accents
+          ['Timiş', 'RO-TM'],
+          ['Dîmboviţa', 'RO-DB'],
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input)).toBe(expected);
+        });
+      });
+
+      describe('separator normalization', () => {
+        test.each([
+          ['bistrita-nasaud', 'RO-BN'],
+          ['BISTRITA_NASAUD', 'RO-BN'],
+          ['bistrita.nasaud', 'RO-BN'],
+          ['bistrita, nasaud', 'RO-BN'],
+          ['satu-mare', 'RO-SM'],
+          ['satu_mare', 'RO-SM'],
+          ['caras-severin', 'RO-CS'],
+          ['caras_severin', 'RO-CS'],
+          ['caras,severin', 'RO-CS'],
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input)).toBe(expected);
+        });
+      });
+
+      describe('administrative-word stripping fallback', () => {
+        test.each([
+          ['judetul cluj', 'RO-CJ'],
+          ['Județul Cluj', 'RO-CJ'],
+          ['municipiul iasi', 'RO-IS'],
+          ['Mun. Iasi', 'RO-IS'], // "mun" expands to "municipiul"
+          ['orasul constanta', 'RO-CT'],
+          ['comuna cluj', 'RO-CJ'],
+          // Bucharest via stripping
+          ['municipiul bucuresti', 'RO-B'],
+          ['mun bucuresti', 'RO-B'],
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input)).toBe(expected);
+        });
+      });
+
+      describe('Bucharest aliases', () => {
+        test.each([
+          ['bucuresti', 'RO-B'],
+          ['București', 'RO-B'],
+          ['buc', 'RO-B'],
+          ['BUC', 'RO-B'],
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input)).toBe(expected);
+        });
+      });
+
+      describe('common typos supported by map', () => {
+        test.each([
+          ['vilcea', 'RO-VL'], // mapped typo
+          ['Vilcea', 'RO-VL'],
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input)).toBe(expected);
+        });
+      });
+
+      describe('unmatched inputs return null', () => {
+        test.each([
+          ['transilvania', null],
+          ['unknown county', null],
+          ['sector 1', null], // sector is not a county code
+        ])('sanitizeCounty(%p) -> %p', (input, expected) => {
+          expect(sanitizeCounty(input)).toBe(expected);
+        });
+      });
+    });
+
+    describe('sanitizeBucharestSector', () => {
+      describe('null/empty handling', () => {
+        test.each([
+          [null, null],
+          ['' as any, null],
+          ['   ' as any, null],
+        ])('sanitizeBucharestSector(%p) -> %p', (input, expected) => {
+          expect(sanitizeBucharestSector(input as any)).toBe(expected);
+        });
+      });
+
+      describe('accepted sector patterns', () => {
+        test.each([
+          ['sector 1', 'SECTOR1'],
+          ['Sectorul 2', 'SECTOR2'],
+          ['SECTOR3', 'SECTOR3'],
+          ['sector 06', 'SECTOR6'],
+          ['sector06', 'SECTOR6'],
+          ['sectorul06', 'SECTOR6'],
+          ['s1', 'SECTOR1'],
+          ['S2', 'SECTOR2'],
+          ['s06', 'SECTOR6'],
+          ['Sector 4 Bucuresti', 'SECTOR4'], // should still extract
+          ['Bucuresti sector 5', 'SECTOR5'],
+          ['Sectorul_6', 'SECTOR6'], // separators normalized
+          ['Sect. 3', 'SECTOR3'], // "sect" -> "sectorul" via normalizeInput
+          ['Sector 3 Mun. Bucureşti', 'SECTOR3'], // extra words
+        ])('sanitizeBucharestSector(%p) -> %p', (input, expected) => {
+          expect(sanitizeBucharestSector(input)).toBe(expected);
+        });
+      });
+
+      describe('invalid sector patterns return null', () => {
+        test.each([
+          ['sector 0', null],
+          ['sector 7', null],
+          ['sectorul 9', null],
+          ['s0', null],
+          ['s7', null],
+          ['bucuresti', null],
+          ['ilfov', null],
+        ])('sanitizeBucharestSector(%p) -> %p', (input, expected) => {
+          expect(sanitizeBucharestSector(input)).toBe(expected);
+        });
+      });
+    });
+
+    describe('isBucharest', () => {
+      test.each([
+        ['RO-B', true],
+        ['ro-b', true],
+        [' Ro-B ', true],
+        ['RO-IF', false],
+        ['B', false],
+        [null, false],
+        [undefined, false],
+        ['' as any, false],
+      ])('isBucharest(%p) -> %p', (input, expected) => {
+        expect(isBucharest(input as any)).toBe(expected);
+      });
     });
   });
 });

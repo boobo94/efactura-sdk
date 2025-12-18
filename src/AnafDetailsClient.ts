@@ -27,6 +27,7 @@ import { HttpClient } from './utils/httpClient';
 import { tryCatch } from './tryCatch';
 import { AnafNotFoundError } from './errors';
 import { AnafDetailsConfig, AnafCompanyData, AnafCompanyResult, AnafRequestPayload, AnafApiResponse } from './types';
+import { DEFAULT_COUNTRY_CODE } from './constants';
 
 /**
  * Default configuration for ANAF Details client
@@ -110,6 +111,7 @@ export class AnafDetailsClient {
             city: element.adresa_sediu_social.sdenumire_Localitate,
             county: element.adresa_sediu_social.sdenumire_Judet,
             postalZone: element.adresa_sediu_social.scod_Postal,
+            countryCode: DEFAULT_COUNTRY_CODE,
           },
           postalCode: element.date_generale.codPostal,
           contactPhone: element.date_generale.telefon,

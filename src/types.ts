@@ -291,8 +291,10 @@ export enum InvoiceTypeCode {
 export interface InvoiceLine {
   /** Line ID (optional, will be auto-generated) */
   id?: string | number;
+  /** Item name */
+  name: string;
   /** Item description */
-  description: string;
+  description?: string;
   /** Quantity */
   quantity: number;
   /** Unit of measure code (default: 'EA') */

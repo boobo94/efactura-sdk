@@ -41,6 +41,7 @@ import { isValidDaysParameter } from './utils/dateUtils';
 import { HttpClient } from './utils/httpClient';
 import { tryCatch } from './tryCatch';
 import { AnafAuthenticator } from './AnafAuthenticator';
+import { stripTaxIdPrefix } from './utils/validators';
 
 /**
  * Main client for interacting with ANAF e-Factura API
@@ -149,7 +150,9 @@ export class AnafEfacturaClient {
     this.validateXmlContent(xmlContent);
     this.validateUploadOptions(options);
 
-    const params = buildUploadParams(this.config.vatNumber, options);
+    const normalizedTaxId = stripTaxIdPrefix(this.config.vatNumber);
+
+    const params = buildUploadParams(normalizedTaxId, options);
     const url = `${UPLOAD_PATH}?${params.toString()}`;
 
     const { data, error } = tryCatch(async () => {

@@ -42,3 +42,19 @@ export function isValidCNP(code: string): boolean {
 
   return true;
 }
+
+export function stripTaxIdPrefix(value: string): string {
+  if (!value) {
+    throw new Error('Company VAT number is missing.');
+  }
+
+  return value.replace(/ro/i, '');
+}
+
+export function normalizeVatNumber(value: string): string {
+  if (!value) {
+    throw new Error('Company VAT number is missing.');
+  }
+
+  return value.startsWith('RO') ? value : `RO${value}`;
+}

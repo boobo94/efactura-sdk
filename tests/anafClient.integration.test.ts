@@ -24,7 +24,10 @@ import { tryCatch } from '../src/tryCatch';
 // Load environment variables
 dotenv.config();
 
-describe('AnafEfacturaClient Integration Tests', () => {
+const runIntegration = process.env.RUN_INTEGRATION_TESTS === 'true';
+const describeIf = runIntegration ? describe : describe.skip;
+
+describeIf('AnafEfacturaClient Integration Tests', () => {
   let client: AnafEfacturaClient;
   let authenticator: AnafAuthenticator;
   let accessToken: string;
@@ -56,6 +59,7 @@ describe('AnafEfacturaClient Integration Tests', () => {
     },
     lines: [
       {
+        name: 'Test Product/Service',
         description: 'Test Product/Service',
         quantity: 1,
         unitPrice: 100,

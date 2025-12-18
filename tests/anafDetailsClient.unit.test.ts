@@ -134,6 +134,7 @@ describe('AnafDetailsClient Unit Tests', () => {
           city: 'Bucuresti',
           county: 'MUNICIPIUL BUCURESTI',
           postalZone: '010101',
+          countryCode: 'RO',
         },
         postalCode: '010101',
         contactPhone: '0212345678',

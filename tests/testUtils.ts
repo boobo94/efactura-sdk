@@ -37,7 +37,8 @@ export const mockTestData = {
     },
     lines: [
       {
-        description: 'Test Product/Service',
+        name: 'Test Product/Service',
+        description: 'Test Product/Service Description',
         quantity: 1,
         unitPrice: 100,
         taxPercent: 19,
