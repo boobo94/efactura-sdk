@@ -234,8 +234,8 @@ function validateLine(line: InvoiceLine, index: number): void {
     throw new AnafValidationError(`Line ${index + 1}: Name is required`);
   }
 
-  if (typeof line.quantity !== 'number' || line.quantity <= 0) {
-    throw new AnafValidationError(`Line ${index + 1}: Quantity must be a positive number`);
+  if (typeof line.quantity !== 'number') {
+    throw new AnafValidationError(`Line ${index + 1}: Quantity must be a number`);
   }
 
   if (typeof line.unitPrice !== 'number' || line.unitPrice < 0) {
