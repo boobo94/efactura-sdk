@@ -565,14 +565,18 @@ export interface UploadResponse {
 }
 
 /**
- * Response from status check operations (getUploadStatus)
+ * Response from status check operations (getStatusMessage)
  * Corresponds to the EfacturaXmlHeader schema for status responses
  */
-export interface StatusResponse {
+export interface StatusMessageResponse {
   /** Processing status */
   stare?: UploadStatusValue;
   /** Download ID for retrieving results (only when stare=ok) */
   idDescarcare?: string;
   /** Error messages (only on error) */
   errors?: string[];
+}
+
+export interface UploadStatusResponse extends StatusMessageResponse {
+  data?: Buffer<ArrayBufferLike>;
 }

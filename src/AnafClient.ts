@@ -8,8 +8,10 @@ import {
   ValidationResult,
   DocumentStandardType,
   UploadResponse,
-  StatusResponse,
+  StatusMessageResponse,
   TokenResponse,
+  UploadStatusValue,
+  UploadStatusResponse,
 } from './types';
 import { AnafSdkError, AnafApiError, AnafValidationError, AnafAuthenticationError } from './errors';
 import {
@@ -36,12 +38,14 @@ import {
   parseJsonResponse,
   isErrorResponse,
   extractErrorMessage,
+  extractErrorMessageFromXml,
 } from './utils/xmlParser';
 import { isValidDaysParameter } from './utils/dateUtils';
 import { HttpClient } from './utils/httpClient';
 import { tryCatch } from './tryCatch';
 import { AnafAuthenticator } from './AnafAuthenticator';
 import { stripTaxIdPrefix } from './utils/validators';
+import decompress from 'decompress';
 
 /**
  * Main client for interacting with ANAF e-Factura API
@@ -75,7 +79,7 @@ import { stripTaxIdPrefix } from './utils/validators';
  * const uploadResult = await client.uploadDocument(xmlContent);
  *
  * // Check status (automatic token refresh if needed)
- * const status = await client.getUploadStatus(uploadResult.indexIncarcare);
+ * const status = await client.getStatusMessage(uploadResult.indexIncarcare);
  *
  * // Download processed document
  * if (status.stare === 'ok' && status.idDescarcare) {
@@ -217,7 +221,7 @@ export class AnafEfacturaClient {
   // ==========================================================================
 
   /**
-   * Get upload status
+   * Get status message
    *
    * Check the processing status of a previously uploaded document.
    *
@@ -227,7 +231,7 @@ export class AnafEfacturaClient {
    * @throws {AnafValidationError} If parameters are invalid
    * @throws {AnafAuthenticationError} If authentication is not configured or fails
    */
-  public async getUploadStatus(uploadId: string): Promise<StatusResponse> {
+  public async getStatusMessage(uploadId: string): Promise<StatusMessageResponse> {
     this.validateUploadId(uploadId);
 
     const params = buildStatusParams(uploadId);
@@ -287,6 +291,46 @@ export class AnafEfacturaClient {
     }
 
     return data;
+  }
+
+  /**
+   * Get upload status
+   *
+   * Check the processing status of a previously uploaded document and
+   * return the zip archive containing the uploaded xml invoice + anaf signature.
+   *
+   * If there are errors, it unzip the archive and read the errors from xml response file.
+   *
+   * @param uploadId Upload ID returned from upload operation
+   * @returns Current status of the upload and the zip content
+   * @throws {AnafApiError} If status check fails
+   * @throws {AnafValidationError} If parameters are invalid
+   * @throws {AnafAuthenticationError} If authentication is not configured or fails
+   */
+  public async getUploadStatus(uploadId: string): Promise<UploadStatusResponse> {
+    const statusMessage = await this.getStatusMessage(uploadId);
+
+    // check if the invoice is still processing return the status only
+    if (statusMessage.stare === UploadStatusValue.InProgress || !statusMessage.idDescarcare) {
+      return statusMessage;
+    }
+
+    const zipResponse = await this.downloadDocument(statusMessage.idDescarcare!);
+
+    // todo: should be unzipped only on error or on success as well?
+    if (statusMessage.stare === UploadStatusValue.Failed) {
+      const zipFiles = await decompress(zipResponse);
+
+      const xmlStatusResponseFile = zipFiles.find((file) => file.path === `${uploadId}.xml`);
+      if (xmlStatusResponseFile) {
+        const errorMessage = extractErrorMessageFromXml(xmlStatusResponseFile.data.toString('utf-8'));
+        if (errorMessage) {
+          statusMessage.errors = [...(statusMessage.errors || []), errorMessage];
+        }
+      }
+    }
+
+    return { ...statusMessage, data: zipResponse };
   }
 
   // ==========================================================================

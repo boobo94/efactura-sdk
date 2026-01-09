@@ -178,7 +178,7 @@ describeIf('AnafEfacturaClient Integration Tests', () => {
         throw new Error('No upload ID available for status check');
       }
 
-      const status = await client.getUploadStatus(uploadResult.indexIncarcare);
+      const status = await client.getStatusMessage(uploadResult.indexIncarcare);
 
       expect(status).toBeDefined();
       expect(['ok', 'nok', 'in prelucrare']).toContain(status.stare);

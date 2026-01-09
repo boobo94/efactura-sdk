@@ -1,11 +1,20 @@
 import { AnafEfacturaClient } from '../src';
 import { AnafValidationError, AnafApiError, AnafAuthenticationError } from '../src/errors';
-import { UploadOptions, PaginatedMessagesParams, ListMessagesParams, MessageFilter } from '../src/types';
+import {
+  UploadOptions,
+  PaginatedMessagesParams,
+  ListMessagesParams,
+  MessageFilter,
+  UploadStatusValue,
+} from '../src/types';
 import { AnafAuthenticator } from '../src/AnafAuthenticator';
 import { mockTestData } from './testUtils';
+import decompress from 'decompress';
 
 // Mock fetch globally
 global.fetch = jest.fn();
+
+jest.mock('decompress', () => jest.fn());
 
 // Mock AnafAuthenticator
 jest.mock('../src/AnafAuthenticator', () => {
@@ -315,6 +324,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
     const mockUploadId = '12345';
     const mockDownloadId = '67890';
     const mockDownloadContent = 'Mock ZIP file content';
+    const mockDecompress = decompress as jest.Mock;
 
     test('should get upload status successfully', async () => {
       (fetch as jest.Mock).mockResolvedValue({
@@ -326,7 +336,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
         text: () => Promise.resolve(mockTestData.mockXmlResponses.statusSuccess),
       });
 
-      const result = await client.getUploadStatus(mockUploadId);
+      const result = await client.getStatusMessage(mockUploadId);
 
       expect(result).toBeDefined();
       expect(result.stare).toBe('ok');
@@ -349,10 +359,61 @@ describe('AnafEfacturaClient Unit Tests', () => {
     });
 
     test('should validate upload ID for status check', async () => {
-      await expect(client.getUploadStatus('')).rejects.toThrow(AnafValidationError);
+      await expect(client.getStatusMessage('')).rejects.toThrow(AnafValidationError);
     });
 
-    describe('getUploadStatus Comprehensive Tests', () => {
+    test('should return status message when upload is still processing', async () => {
+      const statusMessage = { stare: UploadStatusValue.InProgress };
+      const statusSpy = jest.spyOn(client, 'getStatusMessage').mockResolvedValue(statusMessage);
+      const downloadSpy = jest.spyOn(client, 'downloadDocument').mockResolvedValue(Buffer.from(mockDownloadContent));
+
+      const result = await client.getUploadStatus(mockUploadId);
+
+      expect(result).toEqual(statusMessage);
+      expect(statusSpy).toHaveBeenCalledWith(mockUploadId);
+      expect(downloadSpy).not.toHaveBeenCalled();
+      expect(mockDecompress).not.toHaveBeenCalled();
+    });
+
+    test('should download document and attach data for completed uploads', async () => {
+      const statusMessage = { stare: UploadStatusValue.Ok, idDescarcare: mockDownloadId };
+      const zipBuffer = Buffer.from(mockDownloadContent);
+
+      jest.spyOn(client, 'getStatusMessage').mockResolvedValue(statusMessage);
+      const downloadSpy = jest.spyOn(client, 'downloadDocument').mockResolvedValue(zipBuffer);
+
+      const result = await client.getUploadStatus(mockUploadId);
+
+      expect(result).toEqual({ ...statusMessage, data: zipBuffer });
+      expect(downloadSpy).toHaveBeenCalledWith(mockDownloadId);
+      expect(mockDecompress).not.toHaveBeenCalled();
+    });
+
+    test('should extract error details from XML when upload failed', async () => {
+      const statusMessage = { stare: UploadStatusValue.Failed, idDescarcare: mockDownloadId, errors: [] as string[] };
+      const zipBuffer = Buffer.from(mockDownloadContent);
+      const errorXml = `<?xml version="1.0" encoding="UTF-8"?>
+<header>
+  <Errors errorMessage="Eroare de validare XML"/>
+</header>`;
+
+      jest.spyOn(client, 'getStatusMessage').mockResolvedValue(statusMessage);
+      jest.spyOn(client, 'downloadDocument').mockResolvedValue(zipBuffer);
+      mockDecompress.mockResolvedValue([
+        {
+          path: `${mockUploadId}.xml`,
+          data: Buffer.from(errorXml),
+        },
+      ]);
+
+      const result = await client.getUploadStatus(mockUploadId);
+
+      expect(result.data).toEqual(zipBuffer);
+      expect(result.errors).toContain('Eroare de validare XML');
+      expect(mockDecompress).toHaveBeenCalledWith(zipBuffer);
+    });
+
+    describe('getStatusMessage Comprehensive Tests', () => {
       test('should handle successful status response with ok state', async () => {
         (fetch as jest.Mock).mockResolvedValue({
           ok: true,
@@ -363,7 +424,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve(mockTestData.mockXmlResponses.statusSuccess),
         });
 
-        const result = await client.getUploadStatus(mockUploadId);
+        const result = await client.getStatusMessage(mockUploadId);
 
         expect(result).toBeDefined();
         expect(result.stare).toBe('ok');
@@ -381,7 +442,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve(mockTestData.mockXmlResponses.statusInProgress),
         });
 
-        const result = await client.getUploadStatus(mockUploadId);
+        const result = await client.getStatusMessage(mockUploadId);
 
         expect(result).toBeDefined();
         expect(result.stare).toBe('in prelucrare');
@@ -399,7 +460,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve(mockTestData.mockXmlResponses.statusError),
         });
 
-        const result = await client.getUploadStatus(mockUploadId);
+        const result = await client.getStatusMessage(mockUploadId);
 
         expect(result).toBeDefined();
         expect(result.stare).toBe('nok');
@@ -417,12 +478,12 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve(mockTestData.mockXmlResponses.statusErrorNoRights),
         });
 
-        const result = await client.getUploadStatus(mockUploadId);
+        const result = await client.getStatusMessage(mockUploadId);
 
         expect(result).toBeDefined();
         expect(result.errors).toBeDefined();
         expect(result.errors).toContain('Nu aveti dreptul sa consultati starea acestui upload.');
-        expect(result.stare).toBeUndefined();
+        expect(result.stare).toBe('nok');
         expect(result.idDescarcare).toBeUndefined();
       });
 
@@ -436,7 +497,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve(mockTestData.mockXmlResponses.statusErrorInvalidId),
         });
 
-        const result = await client.getUploadStatus(mockUploadId);
+        const result = await client.getStatusMessage(mockUploadId);
 
         expect(result).toBeDefined();
         expect(result.errors).toBeDefined();
@@ -453,7 +514,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve(mockTestData.mockXmlResponses.statusErrorDailyLimit),
         });
 
-        const result = await client.getUploadStatus(mockUploadId);
+        const result = await client.getStatusMessage(mockUploadId);
 
         expect(result).toBeDefined();
         expect(result.errors).toBeDefined();
@@ -461,8 +522,8 @@ describe('AnafEfacturaClient Unit Tests', () => {
       });
 
       test('should throw AnafValidationError for empty upload ID', async () => {
-        await expect(client.getUploadStatus('')).rejects.toThrow(AnafValidationError);
-        await expect(client.getUploadStatus('   ')).rejects.toThrow(AnafValidationError);
+        await expect(client.getStatusMessage('')).rejects.toThrow(AnafValidationError);
+        await expect(client.getStatusMessage('   ')).rejects.toThrow(AnafValidationError);
       });
 
       test('should throw AnafAuthenticationError on 401 response', async () => {
@@ -473,7 +534,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve('Unauthorized'),
         });
 
-        await expect(client.getUploadStatus(mockUploadId)).rejects.toThrow('HTTP 401: Unauthorized');
+        await expect(client.getStatusMessage(mockUploadId)).rejects.toThrow('HTTP 401: Unauthorized');
       });
 
       test('should throw AnafApiError on 500 response', async () => {
@@ -484,7 +545,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve('Internal Server Error'),
         });
 
-        await expect(client.getUploadStatus(mockUploadId)).rejects.toThrow('HTTP 500: Internal Server Error');
+        await expect(client.getStatusMessage(mockUploadId)).rejects.toThrow('HTTP 500: Internal Server Error');
       });
 
       test('should include proper query parameters in request', async () => {
@@ -497,7 +558,7 @@ describe('AnafEfacturaClient Unit Tests', () => {
           text: () => Promise.resolve(mockTestData.mockXmlResponses.statusSuccess),
         });
 
-        await client.getUploadStatus(mockUploadId);
+        await client.getStatusMessage(mockUploadId);
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining('/stareMesaj?id_incarcare=12345'),

@@ -64,30 +64,33 @@ const client = new AnafClient({
 };
 
 // Upload a document
-const uploadResult = await client.uploadDocument(tokens.access_token, xmlContent, {
+const uploadResult = await client.uploadDocument(xmlContent, {
   standard: 'UBL',
   executare: true,
 });
 
-// Check upload status
-const status = await client.getUploadStatus(tokens.access_token, uploadResult.index_incarcare);
+// instead of using both getStatusMessage() and downloadDocument() successively
+// use the wrapper getUploadStatus
 
+// Check upload status
+const status = await client.getStatusMessage(uploadResult.index_incarcare);
 // Download processed document
 if (status.id_descarcare) {
-  const result = await client.downloadDocument(tokens.access_token, status.id_descarcare);
+  const result = await client.downloadDocument(status.id_descarcare);
 }
 
+
 // List recent messages
-const messages = await client.getMessages(tokens.access_token, {
+const messages = await client.getMessages( {
   zile: 7, // Last 7 days
   filtru: 'E', // Only errors
 });
 
 // Validate XML
-const validation = await client.validateXml(tokens.access_token, xmlContent, 'FACT1');
+const validation = await client.validateXml(xmlContent, 'FACT1');
 
 // Convert XML to PDF
-const pdfBuffer = await client.convertXmlToPdf(tokens.access_token, xmlContent, 'FACT1');
+const pdfBuffer = await client.convertXmlToPdf(xmlContent, 'FACT1');
 ```
 
 ### 3. UblBuilder - UBL XML Generation
@@ -286,14 +289,13 @@ const xml = builder.generateInvoiceXml({
 });
 
 // 4. Upload to ANAF
-const uploadResult = await client.uploadDocument(tokens.access_token, xml);
+const uploadResult = await client.uploadDocument(xml);
 
-// 5. Monitor status
-const status = await client.getUploadStatus(tokens.access_token, uploadResult.index_incarcare);
+// 5. Monitor status and download result (when available)
+const status = await client.getUploadStatus(uploadResult.indexIncarcare);
 
-// 6. Download result
-if (status.id_descarcare) {
-  const result = await client.downloadDocument(tokens.access_token, status.id_descarcare);
+if (status.data) {
+  const result = status.data;
 }
 ```
 
@@ -407,7 +409,7 @@ The complete OAuth flow with USB token authentication:
    ```typescript
    // Token is valid for 1 hour
    const client = new AnafClient({ vatNumber: 'RO12345678' });
-   const result = await client.uploadDocument(tokens.access_token, xmlContent);
+   const result = await client.uploadDocument(xmlContent);
    ```
 
 5. **Refresh Tokens**:

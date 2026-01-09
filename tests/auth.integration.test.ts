@@ -161,7 +161,7 @@ describe('ANAF OAuth Authentication & API Client', () => {
 
     test('should generate authorization URL with scope parameter', () => {
       const scope = 'test-scope';
-      const authUrl = authenticator.getAuthorizationUrl(scope);
+      const authUrl = authenticator.getAuthorizationUrl({ scope });
 
       expect(authUrl).toContain(`scope=${scope}`);
     });
@@ -368,7 +368,7 @@ describe('ANAF OAuth Authentication & API Client', () => {
       console.log('💡 Available API methods:');
       console.log('   - uploadDocument(token, xml, options)');
       console.log('   - uploadB2CDocument(token, xml, options)');
-      console.log('   - getUploadStatus(token, uploadId)');
+      console.log('   - getStatusMessage(token, uploadId)');
       console.log('   - downloadDocument(token, downloadId)');
       console.log('   - getMessages(token, params)');
       console.log('   - getMessagesPaginated(token, params)');
