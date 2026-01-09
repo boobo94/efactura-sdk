@@ -1,4 +1,5 @@
-import { parseUploadResponse, parseStatusResponse } from '../src/utils/xmlParser';
+import { parseUploadResponse, parseStatusResponse, extractErrorMessageFromXml } from '../src/utils/xmlParser';
+import { AnafXmlParsingError } from '../src/errors';
 
 describe('ANAF Upload Response Parsing', () => {
   test('should parse successful upload response', () => {
@@ -107,5 +108,40 @@ describe('ANAF Upload Response Parsing', () => {
       indexIncarcare: undefined,
       errors: ['CIF introdus= 123a nu este un numar'],
     });
+  });
+});
+
+describe('extractErrorMessageFromXml', () => {
+  test('should extract error message from XML attributes', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<header>
+  <Errors errorMessage="Mesaj de eroare"/>
+</header>`;
+
+    expect(extractErrorMessageFromXml(xml)).toBe('Mesaj de eroare');
+  });
+
+  test('should extract nested error messages', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <Error>
+    <Detail errorMessage="Eroare din detalii"/>
+  </Error>
+</root>`;
+
+    expect(extractErrorMessageFromXml(xml)).toBe('Eroare din detalii');
+  });
+
+  test('should return null when no error message is present', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<header>
+  <Status value="ok"/>
+</header>`;
+
+    expect(extractErrorMessageFromXml(xml)).toBeNull();
+  });
+
+  test('should throw when XML parsing fails', () => {
+    expect(() => extractErrorMessageFromXml('not xml at all')).toThrow(AnafXmlParsingError);
   });
 });

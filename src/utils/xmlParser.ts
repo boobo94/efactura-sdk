@@ -1,5 +1,5 @@
 import { create } from 'xmlbuilder2';
-import { UploadResponse, StatusResponse, ExecutionStatus, UploadStatusValue } from '../types';
+import { UploadResponse, StatusMessageResponse, ExecutionStatus, UploadStatusValue } from '../types';
 import { AnafXmlParsingError } from '../errors';
 import { tryCatch } from '../tryCatch';
 
@@ -94,7 +94,7 @@ function tryParseUploadStructure(doc: any): UploadResponse | null {
  * @returns Parsed status response object
  * @throws {AnafXmlParsingError} If XML cannot be parsed or has unexpected structure
  */
-export function parseStatusResponse(xmlString: string): StatusResponse {
+export function parseStatusResponse(xmlString: string): StatusMessageResponse {
   const { data: doc, error } = tryCatch(() => {
     const grouped = create(xmlString).toObject({ group: true }) as any;
     const simple = create(xmlString).toObject() as any;
@@ -119,7 +119,7 @@ export function parseStatusResponse(xmlString: string): StatusResponse {
 /**
  * Try to parse status XML structure
  */
-function tryParseStatusStructure(doc: any): StatusResponse | null {
+function tryParseStatusStructure(doc: any): StatusMessageResponse | null {
   if (!doc) return null;
 
   // Find the main response element - ANAF uses 'header' element
@@ -136,7 +136,7 @@ function tryParseStatusStructure(doc: any): StatusResponse | null {
 
   // Handle status responses (have stare attribute or id_descarcare)
   if (attributes.stare || attributes.id_descarcare) {
-    const result: StatusResponse = {};
+    const result: StatusMessageResponse = {};
 
     if (attributes.stare) {
       result.stare = String(attributes.stare) as UploadStatusValue;
@@ -154,7 +154,7 @@ function tryParseStatusStructure(doc: any): StatusResponse | null {
   if (errors) {
     const errorElements = Array.isArray(errors) ? errors : [errors];
     const errorMessages = errorElements.map((err: any) => findErrorMessage(err) || 'Operation failed');
-    return { errors: errorMessages };
+    return { stare: UploadStatusValue.Failed, errors: errorMessages };
   }
 
   // Fallback: Try to find other common response structures
@@ -175,7 +175,7 @@ function tryParseStatusStructure(doc: any): StatusResponse | null {
     if (content.Error || content.eroare) {
       const errorDetail = content.Error || content.eroare;
       const errorMessage = errorDetail.mesaj ? extractTextValue(errorDetail.mesaj) : extractTextValue(errorDetail);
-      return { errors: [errorMessage] };
+      return { stare: UploadStatusValue.Failed, errors: [errorMessage] };
     }
   }
 
@@ -289,4 +289,23 @@ export function extractErrorMessage(response: any): string | null {
   if (response?.eroare) return response.eroare; // Romanian error field used in list API responses
   if (response?.mesaj && response?.stare === 'nok') return response.mesaj;
   return null;
+}
+
+/**
+ * Extract error message from XML content
+ * @param xmlString Raw XML content
+ * @returns Error message or null if not found
+ */
+export function extractErrorMessageFromXml(xmlString: string): string | null {
+  const { data: doc, error } = tryCatch(() => {
+    const grouped = create(xmlString).toObject({ group: true }) as any;
+    const simple = create(xmlString).toObject() as any;
+    return { grouped, simple };
+  });
+
+  if (error) {
+    throw new AnafXmlParsingError('Failed to parse XML response', xmlString);
+  }
+
+  return findErrorMessage(doc.grouped) || findErrorMessage(doc.simple);
 }
