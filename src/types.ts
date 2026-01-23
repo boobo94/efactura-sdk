@@ -265,7 +265,9 @@ export interface Address {
 export interface Party {
   /** Company registration name */
   registrationName: string;
-  /** Company ID (CIF/CUI) */
+  /** Trade Register identifier (ONRC "J"/"F" number) */
+  registrationNumber?: string;
+  /** Company tax identifier (CIF/CUI); use "RO" prefix when VAT registered */
   companyId: string;
   /** Wether Company is vat payer */
   isVatPayer?: boolean;

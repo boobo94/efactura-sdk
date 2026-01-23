@@ -19,6 +19,7 @@ import { tryCatch } from './tryCatch';
  *   supplier: {
  *     registrationName: 'Company SRL',
  *     companyId: 'RO12345678',
+ *     registrationNumber: 'J40/12345/2020',
  *     isVatPayer: true,
  *     address: {
  *       street: 'Str. Example 1',
@@ -29,6 +30,7 @@ import { tryCatch } from './tryCatch';
  *   customer: {
  *     registrationName: 'Customer SRL',
  *     companyId: 'RO87654321',
+ *     registrationNumber: 'J12/9876/2019',
  *     isVatPayer: true,
  *     address: {
  *       street: 'Str. Customer 2',

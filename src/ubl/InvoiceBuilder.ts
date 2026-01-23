@@ -80,7 +80,7 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
     .txt(party.registrationName)
     .up()
     .ele('cbc:CompanyID')
-    .txt(party.companyId)
+    .txt(party.registrationNumber ?? party.companyId)
     .up()
     .up();
 }
@@ -267,6 +267,7 @@ function validateLine(line: InvoiceLine, index: number): void {
  *   supplier: {
  *     registrationName: 'Furnizor SRL',
  *     companyId: 'RO12345678',
+ *     registrationNumber: 'J40/12345/2020',
  *     isVatPayer: true,
  *     address: {
  *       street: 'Str. Exemplu 1',
@@ -277,6 +278,7 @@ function validateLine(line: InvoiceLine, index: number): void {
  *   customer: {
  *     registrationName: 'Client SRL',
  *     companyId: 'RO87654321',
+ *     registrationNumber: 'J12/9876/2019',
  *     isVatPayer: true,
  *     address: {
  *       street: 'Str. Client 2',
