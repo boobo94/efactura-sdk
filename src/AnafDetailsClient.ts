@@ -110,10 +110,10 @@ export class AnafDetailsClient {
             street: element.adresa_sediu_social.sdenumire_Strada,
             city: element.adresa_sediu_social.sdenumire_Localitate,
             county: element.adresa_sediu_social.sdenumire_Judet,
-            postalZone: element.adresa_sediu_social.scod_Postal,
+            postalZone: element.adresa_sediu_social.scod_Postal || '000000',
             countryCode: DEFAULT_COUNTRY_CODE,
           },
-          postalCode: element.date_generale.codPostal,
+          postalCode: element.date_generale.codPostal || '000000',
           contactPhone: element.date_generale.telefon,
           isVatPayer: element.inregistrare_scop_Tva.scpTVA || false,
         });
