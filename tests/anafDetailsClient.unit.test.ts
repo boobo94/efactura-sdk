@@ -601,7 +601,7 @@ describe('AnafDetailsClient Unit Tests', () => {
       expect(result3.success).toBe(true);
 
       expect(result1.data?.[0]?.vatCode).toBe('123');
-      expect(result1.data?.[0]?.postalCode).toBe(null);
+      expect(result1.data?.[0]?.postalCode).toBe('000000');
     });
 
     test('should handle missing optional fields', async () => {
@@ -682,7 +682,7 @@ describe('AnafDetailsClient Unit Tests', () => {
       expect(result.data?.[0]?.name).toBe('Minimal Company');
       expect(result.data?.[0]?.registrationNumber).toBe('');
       expect(result.data?.[0]?.contactPhone).toBe('');
-      expect(result.data?.[0]?.postalCode).toBe(null);
+      expect(result.data?.[0]?.postalCode).toBe('000000');
       expect(result.data?.[0]?.isVatPayer).toBe(true);
     });
   });
