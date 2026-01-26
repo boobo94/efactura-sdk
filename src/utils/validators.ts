@@ -56,5 +56,10 @@ export function normalizeVatNumber(value: string): string {
     throw new Error('Company VAT number is missing.');
   }
 
+  // if the code is cnp return it
+  if (isValidCNP(value)) {
+    return value;
+  }
+
   return value.startsWith('RO') ? value : `RO${value}`;
 }

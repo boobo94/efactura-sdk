@@ -31,6 +31,7 @@ interface TaxGroup {
 function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
   const partyElement = root.ele(tagName).ele('cac:Party');
   const address = party.address;
+  const normalizedTaxId = normalizeVatNumber(party.companyId);
 
   const county = sanitizeCounty(address.county);
   // Determine city value based on whether it's Bucharest or not
@@ -63,7 +64,7 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
     partyElement
       .ele('cac:PartyTaxScheme')
       .ele('cbc:CompanyID')
-      .txt(normalizeVatNumber(party.companyId))
+      .txt(normalizedTaxId)
       .up()
       .ele('cac:TaxScheme')
       .ele('cbc:ID')
@@ -80,7 +81,7 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
     .txt(party.registrationName)
     .up()
     .ele('cbc:CompanyID')
-    .txt(party.registrationNumber ?? party.companyId)
+    .txt(normalizedTaxId)
     .up()
     .up();
 }

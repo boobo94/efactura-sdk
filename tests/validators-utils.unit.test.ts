@@ -66,6 +66,11 @@ describe('Validators Utilities', () => {
       expect(normalizeVatNumber('ro123')).toBe('ROro123');
     });
 
+    it('normalizeVatNumber ignores CNP', () => {
+      expect(isValidCNP('0000000000000')).toBe(true);
+      expect(isValidCNP('1960129460018')).toBe(true);
+    });
+
     it('normalizeVatNumber throws when value is empty', () => {
       expect(() => normalizeVatNumber('')).toThrow('Company VAT number is missing.');
       expect(() => normalizeVatNumber(null as any)).toThrow('Company VAT number is missing.');

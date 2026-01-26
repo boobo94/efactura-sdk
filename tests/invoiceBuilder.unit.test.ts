@@ -165,23 +165,6 @@ describe('InvoiceBuilder', () => {
       expect(xml).toContain('<cbc:PayableAmount currencyID="RON">0.00</cbc:PayableAmount>');
     });
 
-    test('uses registration number in PartyLegalEntity when provided', () => {
-      const invoiceData: InvoiceInput = {
-        ...createBaseInvoice(),
-        supplier: {
-          ...createBaseInvoice().supplier,
-          companyId: 'RO12345678',
-          registrationNumber: 'J40/12345/2020',
-        },
-      };
-
-      const xml = buildInvoiceXml(invoiceData);
-
-      expect(xml.replace(/\s+/g, '')).toContain(
-        '<cac:PartyLegalEntity><cbc:RegistrationName>SupplierSRL</cbc:RegistrationName><cbc:CompanyID>J40/12345/2020</cbc:CompanyID></cac:PartyLegalEntity>'
-      );
-    });
-
     test('falls back to companyId in PartyLegalEntity when no registration number', () => {
       const invoiceData: InvoiceInput = {
         ...createBaseInvoice(),
