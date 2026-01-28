@@ -582,3 +582,11 @@ export interface StatusMessageResponse {
 export interface UploadStatusResponse extends StatusMessageResponse {
   data?: Buffer<ArrayBufferLike>;
 }
+
+/**
+ * Tax Category
+ * O – Not subject to VAT
+ * S - Standard rated
+ * Z – Zero-rated VAT
+ */
+export type TaxCategoryId = 'O' | 'S' | 'Z';

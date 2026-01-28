@@ -1,6 +1,6 @@
 import { create } from 'xmlbuilder2';
 import type { XMLBuilder } from 'xmlbuilder2/lib/interfaces'; // For v3.1.1
-import { InvoiceInput, InvoiceLine, Party, Address, InvoiceTypeCode } from '../types';
+import { InvoiceInput, InvoiceLine, Party, Address, InvoiceTypeCode, TaxCategoryId } from '../types';
 import { UBL_CUSTOMIZATION_ID, DEFAULT_CURRENCY, DEFAULT_COUNTRY_CODE, DEFAULT_UNIT_CODE } from '../constants';
 import { formatDateForAnaf } from '../utils/dateUtils';
 import { AnafValidationError } from '../errors';
@@ -26,9 +26,10 @@ interface TaxGroup {
  * Build party XML structure for supplier or customer
  * @param root XML root element
  * @param tagName Tag name (cac:AccountingSupplierParty or cac:AccountingCustomerParty)
+ * @param isSupplierVatPayer Whether supplier is VAT registered
  * @param party Party information
  */
-function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
+function buildPartyXml(root: XMLBuilder, tagName: string, party: Party, isSupplierVatPayer: boolean): void {
   const partyElement = root.ele(tagName).ele('cac:Party');
   const address = party.address;
   const normalizedTaxId = normalizeVatNumber(party.companyId);
@@ -60,7 +61,7 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party): void {
     .up();
 
   // Party Tax Scheme (if VAT number provided)
-  if (party.isVatPayer) {
+  if (isSupplierVatPayer && party.isVatPayer) {
     partyElement
       .ele('cac:PartyTaxScheme')
       .ele('cbc:CompanyID')
@@ -112,16 +113,40 @@ function groupLinesByTax(lines: InvoiceLine[], isSupplierVatPayer: boolean): Tax
     const taxAmount = parseFloat((lineExtension * (taxPercent / 100)).toFixed(2));
 
     // Determine tax category ID
-    let categoryId: string;
+    let categoryId: TaxCategoryId;
     let exemptionReasonCode: string | undefined;
 
     if (!isSupplierVatPayer) {
-      categoryId = 'O'; // Not subject to VAT
+      /**
+       * O – Not subject to VAT
+       * VAT does not apply at all. The operation is outside VAT scope.
+       *
+       * Typical situations:
+       * - Compensation, penalties
+       * - Pure reimbursements
+       * - Certain transport / platform settlements
+       * - Activities legally outside VAT scope
+       */
+      categoryId = 'O';
       exemptionReasonCode = 'VATEX-EU-O';
     } else if (taxPercent > 0) {
-      categoryId = 'S'; // Standard rated
+      /**
+       * S - Standard rated
+       * VAT is applicable. Most common category for Romanian invoices.
+       *
+       * Requires cbc:Percent (e.g. 19, 9, 5)
+       */
+      categoryId = 'S';
     } else {
-      categoryId = 'Z'; // Zero rated
+      /**
+       * Z – Zero-rated VAT
+       *
+       * Typical situations:
+       * - Exports outside EU
+       * - Intra-Community supply (ICS)
+       * - Other legally zero-rated operations
+       */
+      categoryId = 'Z';
     }
 
     const key = `${categoryId}-${taxPercent}`;
@@ -346,8 +371,8 @@ export function buildInvoiceXml(input: InvoiceInput): string {
     .up();
 
   // Parties
-  buildPartyXml(root, 'cac:AccountingSupplierParty', input.supplier);
-  buildPartyXml(root, 'cac:AccountingCustomerParty', input.customer);
+  buildPartyXml(root, 'cac:AccountingSupplierParty', input.supplier, isSupplierVatPayer);
+  buildPartyXml(root, 'cac:AccountingCustomerParty', input.customer, isSupplierVatPayer);
 
   // Payment means (if IBAN provided)
   if (input.paymentIban) {
@@ -371,6 +396,7 @@ export function buildInvoiceXml(input: InvoiceInput): string {
     .txt(totalTaxAmount.toFixed(2))
     .up();
 
+  console.log('taxGroups', taxGroups);
   // Add tax subtotal for each tax group (if any)
   if (taxGroups.length > 0) {
     taxGroups.forEach((group) => {
@@ -385,10 +411,12 @@ export function buildInvoiceXml(input: InvoiceInput): string {
         .ele('cac:TaxCategory')
         .ele('cbc:ID')
         .txt(group.categoryId)
-        .up()
-        .ele('cbc:Percent')
-        .txt(group.percent.toFixed(2))
         .up();
+
+      // Add percent for Standard rated or Zero-rated VAT, and ignore for O - Not subject of VAT operations
+      if (group.categoryId !== 'O') {
+        subtotalElement.ele('cbc:Percent').txt(group.percent.toFixed(2)).up();
+      }
 
       // Add exemption reason for category O
       if (group.exemptionReasonCode) {
@@ -448,7 +476,7 @@ export function buildInvoiceXml(input: InvoiceInput): string {
     const roundedUnitPrice = parseFloat(line.unitPrice.toFixed(2));
 
     // Determine tax category for this line
-    let lineTaxCategory: string;
+    let lineTaxCategory: TaxCategoryId;
     if (!isSupplierVatPayer) {
       lineTaxCategory = 'O';
     } else if (taxPercent > 0) {
@@ -467,32 +495,26 @@ export function buildInvoiceXml(input: InvoiceInput): string {
       .up()
       .ele('cbc:LineExtensionAmount', { currencyID: currency })
       .txt(lineExtension.toFixed(2))
-      .up()
-      .ele('cac:Item')
-      .ele('cbc:Name')
-      .txt(line.name)
       .up();
+
+    const itemElement = lineElement.ele('cac:Item').ele('cbc:Name').txt(line.name).up();
 
     // Add description if present
     if (line.description) {
-      lineElement.ele('cbc:Description').txt(line.description).up();
+      itemElement.ele('cbc:Description').txt(line.description).up();
     }
 
-    lineElement
+    const classifiedTaxCategoryElement = itemElement
       .ele('cac:ClassifiedTaxCategory')
       .ele('cbc:ID')
       .txt(lineTaxCategory)
-      .up()
-      .ele('cbc:Percent')
-      .txt(taxPercent.toFixed(2))
-      .up()
-      .ele('cac:TaxScheme')
-      .ele('cbc:ID')
-      .txt('VAT')
-      .up()
-      .up()
-      .up()
-      .up()
+      .up();
+    if (lineTaxCategory !== 'O') {
+      classifiedTaxCategoryElement.ele('cbc:Percent').txt(taxPercent.toFixed(2)).up();
+    }
+    classifiedTaxCategoryElement.ele('cac:TaxScheme').ele('cbc:ID').txt('VAT').up().up();
+
+    lineElement
       .ele('cac:Price')
       .ele('cbc:PriceAmount', { currencyID: currency })
       .txt(roundedUnitPrice.toFixed(2))

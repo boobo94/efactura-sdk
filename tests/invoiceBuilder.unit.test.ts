@@ -3,6 +3,8 @@ import { InvoiceInput, InvoiceTypeCode } from '../src/types';
 import { AnafValidationError } from '../src/errors';
 import { DEFAULT_CURRENCY, DEFAULT_UNIT_CODE, UBL_CUSTOMIZATION_ID } from '../src/constants';
 
+const compactXml = (xml: string) => xml.replace(/\s+/g, '');
+
 const createBaseInvoice = (): InvoiceInput => ({
   invoiceNumber: 'INV-001',
   issueDate: '2024-01-15',
@@ -106,12 +108,17 @@ describe('InvoiceBuilder', () => {
       };
 
       const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
 
       // Line rounding and tax categories
       expect(xml).toContain('<cbc:LineExtensionAmount currencyID="RON">20.70</cbc:LineExtensionAmount>');
       expect(xml).toContain('<cbc:LineExtensionAmount currencyID="RON">50.00</cbc:LineExtensionAmount>');
-      expect(xml).toContain('<cbc:Percent>19.00</cbc:Percent>');
-      expect(xml).toContain('<cbc:Percent>0.00</cbc:Percent>');
+      expect(normalizedXml).toContain(
+        '<cac:ClassifiedTaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>19.00</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:ClassifiedTaxCategory>'
+      );
+      expect(normalizedXml).toContain(
+        '<cac:ClassifiedTaxCategory><cbc:ID>Z</cbc:ID><cbc:Percent>0.00</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:ClassifiedTaxCategory>'
+      );
       expect(xml).toContain('<cbc:ID>S</cbc:ID>'); // standard rated
       expect(xml).toContain('<cbc:ID>Z</cbc:ID>'); // zero rated
 
@@ -140,10 +147,17 @@ describe('InvoiceBuilder', () => {
       };
 
       const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
 
       expect(xml).toContain('<cbc:ID>O</cbc:ID>'); // exemption category
       expect(xml).toContain('<cbc:TaxExemptionReasonCode>VATEX-EU-O</cbc:TaxExemptionReasonCode>');
-      expect(xml).toContain('<cbc:Percent>19.00</cbc:Percent>'); // still keeps percent for line/group
+      // remove cbc:Percent for O tax category
+      expect(normalizedXml).toContain(
+        '<cac:ClassifiedTaxCategory><cbc:ID>O</cbc:ID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:ClassifiedTaxCategory>'
+      );
+      expect(normalizedXml).toContain(
+        '<cac:TaxCategory><cbc:ID>O</cbc:ID><cbc:TaxExemptionReasonCode>VATEX-EU-O</cbc:TaxExemptionReasonCode><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:TaxCategory>'
+      );
     });
 
     test('adds zero tax subtotal when invoice has no lines and formats dates', () => {
@@ -165,6 +179,39 @@ describe('InvoiceBuilder', () => {
       expect(xml).toContain('<cbc:PayableAmount currencyID="RON">0.00</cbc:PayableAmount>');
     });
 
+    test('omits party tax schemes when supplier is not VAT payer even if customer is', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        supplier: {
+          ...createBaseInvoice().supplier,
+          isVatPayer: false,
+        },
+        customer: {
+          ...createBaseInvoice().customer,
+          isVatPayer: true,
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+
+      expect(xml).not.toContain('<cac:PartyTaxScheme>');
+    });
+
+    test('adds party tax schemes for both parties when supplier is VAT payer', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        customer: {
+          ...createBaseInvoice().customer,
+          isVatPayer: true,
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+
+      const partyTaxSchemeCount = (xml.match(/<cac:PartyTaxScheme>/g) || []).length;
+      expect(partyTaxSchemeCount).toBe(2);
+    });
+
     test('falls back to companyId in PartyLegalEntity when no registration number', () => {
       const invoiceData: InvoiceInput = {
         ...createBaseInvoice(),
@@ -176,8 +223,9 @@ describe('InvoiceBuilder', () => {
       };
 
       const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
 
-      expect(xml.replace(/\s+/g, '')).toContain(
+      expect(normalizedXml).toContain(
         '<cac:PartyLegalEntity><cbc:RegistrationName>SupplierSRL</cbc:RegistrationName><cbc:CompanyID>RO12345678</cbc:CompanyID></cac:PartyLegalEntity>'
       );
     });
@@ -194,8 +242,9 @@ describe('InvoiceBuilder', () => {
       };
 
       const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
 
-      expect(xml.replace(/\s+/g, '')).toContain(
+      expect(normalizedXml).toContain(
         '<cac:PartyLegalEntity><cbc:RegistrationName>SupplierSRL</cbc:RegistrationName><cbc:CompanyID>1960101123456</cbc:CompanyID></cac:PartyLegalEntity>'
       );
     });
