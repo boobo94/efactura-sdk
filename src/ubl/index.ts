@@ -9,3 +9,8 @@ export { buildInvoiceXml } from './InvoiceBuilder';
 
 // Re-export types for convenience
 export type { InvoiceInput, InvoiceLine, Party, Address } from '../types';
+
+/**
+ * Address helpers
+ */
+export { sanitizeCounty, sanitizeBucharestSector, isBucharest } from './address-sanitizer';

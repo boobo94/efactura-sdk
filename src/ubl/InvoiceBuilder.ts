@@ -396,7 +396,6 @@ export function buildInvoiceXml(input: InvoiceInput): string {
     .txt(totalTaxAmount.toFixed(2))
     .up();
 
-  console.log('taxGroups', taxGroups);
   // Add tax subtotal for each tax group (if any)
   if (taxGroups.length > 0) {
     taxGroups.forEach((group) => {
