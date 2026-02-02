@@ -496,12 +496,14 @@ export function buildInvoiceXml(input: InvoiceInput): string {
       .txt(lineExtension.toFixed(2))
       .up();
 
-    const itemElement = lineElement.ele('cac:Item').ele('cbc:Name').txt(line.name).up();
+    const itemElement = lineElement.ele('cac:Item');
 
     // Add description if present
     if (line.description) {
       itemElement.ele('cbc:Description').txt(line.description).up();
     }
+
+    itemElement.ele('cbc:Name').txt(line.name);
 
     const classifiedTaxCategoryElement = itemElement
       .ele('cac:ClassifiedTaxCategory')
