@@ -1,11 +1,17 @@
 import { create } from 'xmlbuilder2';
 import type { XMLBuilder } from 'xmlbuilder2/lib/interfaces'; // For v3.1.1
 import { InvoiceInput, InvoiceLine, Party, Address, InvoiceTypeCode, TaxCategoryId } from '../types';
-import { UBL_CUSTOMIZATION_ID, DEFAULT_CURRENCY, DEFAULT_COUNTRY_CODE, DEFAULT_UNIT_CODE } from '../constants';
+import {
+  UBL_CUSTOMIZATION_ID,
+  DEFAULT_CURRENCY,
+  DEFAULT_COUNTRY_CODE,
+  DEFAULT_UNIT_CODE,
+  DEFAULT_COUNTRY,
+} from '../constants';
 import { formatDateForAnaf } from '../utils/dateUtils';
 import { AnafValidationError } from '../errors';
 import { normalizeVatNumber } from '../utils/validators';
-import { isBucharest, sanitizeBucharestSector, sanitizeCounty } from './address-sanitizer';
+import { getCountryCodeByInput, isBucharest, sanitizeBucharestSector, sanitizeCounty } from './address-sanitizer';
 
 /**
  * Enhanced UBL 2.1 Invoice Builder for ANAF e-Factura
@@ -34,9 +40,16 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party, isSuppli
   const address = party.address;
   const normalizedTaxId = normalizeVatNumber(party.companyId);
 
-  const county = sanitizeCounty(address.county);
-  // Determine city value based on whether it's Bucharest or not
-  const city = isBucharest(county) ? sanitizeBucharestSector(address.city) : address.city;
+  const countryCode = getCountryCodeByInput(address.country || DEFAULT_COUNTRY);
+  let county: string | null = address.county || '';
+  let city: string | null = address.city;
+
+  // validate that if country is Romania, county and city must be provided and sanitized
+  if (countryCode === DEFAULT_COUNTRY_CODE) {
+    county = sanitizeCounty(address.county);
+    // Determine city value based on whether it's Bucharest or not
+    city = isBucharest(county) ? sanitizeBucharestSector(address.city) : address.city;
+  }
 
   // Postal Address
   partyElement
@@ -55,7 +68,7 @@ function buildPartyXml(root: XMLBuilder, tagName: string, party: Party, isSuppli
     .up()
     .ele('cac:Country')
     .ele('cbc:IdentificationCode')
-    .txt(address.countryCode || DEFAULT_COUNTRY_CODE)
+    .txt(countryCode || DEFAULT_COUNTRY_CODE)
     .up()
     .up()
     .up();

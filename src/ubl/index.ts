@@ -13,4 +13,11 @@ export type { InvoiceInput, InvoiceLine, Party, Address } from '../types';
 /**
  * Address helpers
  */
-export { sanitizeCounty, sanitizeBucharestSector, isBucharest } from './address-sanitizer';
+export {
+  sanitizeCounty,
+  sanitizeBucharestSector,
+  isBucharest,
+  getCountryCodeByInput,
+  isInternalInvoice,
+  getCountryFromTaxId,
+} from './address-sanitizer';

@@ -37,6 +37,10 @@ describe('Validators Utilities', () => {
       // Valid format and sex digit, but invalid control digit
       expect(isValidCNP('1980101223459')).toBe(false);
     });
+
+    it('returns true when checksum remainder is 10 and control digit is 1', () => {
+      expect(isValidCNP('1000000000071')).toBe(true);
+    });
   });
 
   describe('Stripping Tax ID', () => {
@@ -56,19 +60,26 @@ describe('Validators Utilities', () => {
   });
 
   describe('VAT Number normalization', () => {
-    it('normalizeVatNumber prefixes RO when missing and preserves existing RO', () => {
-      expect(normalizeVatNumber('12345678')).toBe('RO12345678');
-      expect(normalizeVatNumber('RO12345678')).toBe('RO12345678');
+    it('normalizes valid CIF values to RO-prefixed format', () => {
+      expect(normalizeVatNumber('1000009')).toBe('RO1000009');
+      expect(normalizeVatNumber('RO1000009')).toBe('RO1000009');
+      expect(normalizeVatNumber('ro1000009')).toBe('RO1000009');
     });
 
-    it('normalizeVatNumber is case-sensitive for existing prefix', () => {
-      // Current implementation checks startsWith('RO') (case-sensitive)
-      expect(normalizeVatNumber('ro123')).toBe('ROro123');
+    it('keeps invalid CIF values unchanged', () => {
+      expect(normalizeVatNumber('12345678')).toBe('12345678');
+      expect(normalizeVatNumber('12345678901')).toBe('12345678901');
+      expect(normalizeVatNumber('RO12A34')).toBe('RO12A34');
+    });
+
+    it('handles CIF modulo-11 remainder 10 branch', () => {
+      expect(normalizeVatNumber('60')).toBe('RO60');
+      expect(normalizeVatNumber('RO60')).toBe('RO60');
     });
 
     it('normalizeVatNumber ignores CNP', () => {
-      expect(isValidCNP('0000000000000')).toBe(true);
-      expect(isValidCNP('1960129460018')).toBe(true);
+      expect(normalizeVatNumber('0000000000000')).toBe('0000000000000');
+      expect(normalizeVatNumber('1960129460018')).toBe('1960129460018');
     });
 
     it('normalizeVatNumber throws when value is empty', () => {

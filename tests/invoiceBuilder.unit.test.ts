@@ -10,7 +10,7 @@ const createBaseInvoice = (): InvoiceInput => ({
   issueDate: '2024-01-15',
   supplier: {
     registrationName: 'Supplier SRL',
-    companyId: '12345678', // normalized to RO12345678
+    companyId: '160796', // normalized to RO160796
     isVatPayer: true,
     address: {
       street: 'Str. Supplier',
@@ -70,7 +70,7 @@ describe('InvoiceBuilder', () => {
       expect(xml).toContain('<cbc:CountrySubentity>RO-B</cbc:CountrySubentity>'); // Bucharest sanitized
       expect(xml).toContain('<cbc:CityName>SECTOR3</cbc:CityName>'); // Bucharest sector normalized
       expect(xml).toContain('<cbc:CountrySubentity>RO-CJ</cbc:CountrySubentity>'); // Non-Bucharest county
-      expect(xml).toContain('RO12345678'); // VAT normalized for VAT payer
+      expect(xml).toContain('RO160796'); // VAT normalized for VAT payer
 
       // Payment and line defaults
       expect(xml).toContain('<cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>');
@@ -212,12 +212,77 @@ describe('InvoiceBuilder', () => {
       expect(partyTaxSchemeCount).toBe(2);
     });
 
+    test('uses address country and skips RO county/city sanitization for foreign parties', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        supplier: {
+          ...createBaseInvoice().supplier,
+          companyId: 'DE1607969',
+          address: {
+            ...createBaseInvoice().supplier.address,
+            country: 'Germany',
+            city: 'Sector 3',
+            county: 'Bucuresti',
+          },
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
+
+      expect(normalizedXml).toContain('<cbc:IdentificationCode>DE</cbc:IdentificationCode>');
+      expect(normalizedXml).toContain('<cbc:CityName>Sector3</cbc:CityName>');
+      expect(normalizedXml).toContain('<cbc:CountrySubentity>Bucuresti</cbc:CountrySubentity>');
+    });
+
+    test('uses address.country when tax ID has a different country prefix', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        supplier: {
+          ...createBaseInvoice().supplier,
+          companyId: 'DE1607969',
+          address: {
+            ...createBaseInvoice().supplier.address,
+            country: 'France',
+            county: 'Ile-de-France',
+          },
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
+
+      expect(normalizedXml).toContain('<cbc:IdentificationCode>FR</cbc:IdentificationCode>');
+      expect(normalizedXml).not.toContain('<cbc:IdentificationCode>DE</cbc:IdentificationCode>');
+    });
+
+    test('uses address country when tax ID has no country prefix', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        customer: {
+          ...createBaseInvoice().customer,
+          companyId: '1607969',
+          address: {
+            ...createBaseInvoice().customer.address,
+            country: 'United States of America',
+            county: 'California',
+          },
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
+
+      expect(normalizedXml).toContain('<cbc:IdentificationCode>US</cbc:IdentificationCode>');
+      expect(normalizedXml).toContain('<cbc:CountrySubentity>California</cbc:CountrySubentity>');
+    });
+
     test('falls back to companyId in PartyLegalEntity when no registration number', () => {
       const invoiceData: InvoiceInput = {
         ...createBaseInvoice(),
         supplier: {
           ...createBaseInvoice().supplier,
-          companyId: 'RO12345678',
+          companyId: 'RO160796',
           // registrationNumber is undefined,
         },
       };
@@ -226,7 +291,7 @@ describe('InvoiceBuilder', () => {
       const normalizedXml = compactXml(xml);
 
       expect(normalizedXml).toContain(
-        '<cac:PartyLegalEntity><cbc:RegistrationName>SupplierSRL</cbc:RegistrationName><cbc:CompanyID>RO12345678</cbc:CompanyID></cac:PartyLegalEntity>'
+        '<cac:PartyLegalEntity><cbc:RegistrationName>SupplierSRL</cbc:RegistrationName><cbc:CompanyID>RO160796</cbc:CompanyID></cac:PartyLegalEntity>'
       );
     });
 

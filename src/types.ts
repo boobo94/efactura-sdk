@@ -255,8 +255,8 @@ export interface Address {
   postalZone: string;
   /** County/Region (optional) */
   county?: string;
-  /** Country code (default: 'RO') */
-  countryCode?: string;
+  /** Country (default: 'Romania') */
+  country?: string;
 }
 
 /**
