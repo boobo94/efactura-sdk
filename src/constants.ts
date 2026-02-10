@@ -148,6 +148,11 @@ export const DEFAULT_CURRENCY = 'RON';
 export const DEFAULT_COUNTRY_CODE = 'RO';
 
 /**
+ * Default country for invoices
+ */
+export const DEFAULT_COUNTRY = 'Romania';
+
+/**
  * Default unit of measure code
  */
 export const DEFAULT_UNIT_CODE = 'EA'; // Each

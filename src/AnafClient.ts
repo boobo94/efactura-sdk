@@ -436,6 +436,8 @@ export class AnafEfacturaClient {
    * Validate an XML document against ANAF schemas without uploading it
    * to the e-Factura system.
    *
+   * For external invoices DO NOT use this method for validation, as ANAF does not validate external documents. Instead, upload the document without validation with `extern=true`
+   *
    * @param xmlContent XML document to validate
    * @param standard Document standard (FACT1 or FCN)
    * @returns Validation result

@@ -27,7 +27,7 @@ import { HttpClient } from './utils/httpClient';
 import { tryCatch } from './tryCatch';
 import { AnafNotFoundError } from './errors';
 import { AnafDetailsConfig, AnafCompanyData, AnafCompanyResult, AnafRequestPayload, AnafApiResponse } from './types';
-import { DEFAULT_COUNTRY_CODE } from './constants';
+import { DEFAULT_COUNTRY, DEFAULT_COUNTRY_CODE } from './constants';
 
 /**
  * Default configuration for ANAF Details client
@@ -98,7 +98,7 @@ export class AnafDetailsClient {
    * @param cui - Original CUI number
    * @returns Transformed company result
    */
-  private transformResponse(response: AnafApiResponse, cui: number): AnafCompanyResult {
+  private transformResponse(response: AnafApiResponse): AnafCompanyResult {
     const data: AnafCompanyData[] = [];
     if (response.found) {
       response.found.forEach((element) => {
@@ -111,7 +111,7 @@ export class AnafDetailsClient {
             city: element.adresa_sediu_social.sdenumire_Localitate,
             county: element.adresa_sediu_social.sdenumire_Judet,
             postalZone: element.adresa_sediu_social.scod_Postal || '000000',
-            countryCode: DEFAULT_COUNTRY_CODE,
+            country: DEFAULT_COUNTRY,
           },
           postalCode: element.date_generale.codPostal || '000000',
           contactPhone: element.date_generale.telefon,
@@ -256,7 +256,7 @@ export class AnafDetailsClient {
 
     console.log('ANAF API successful response for batch request');
 
-    const transformedResult = this.transformResponse(data.data, 0); // CUI not needed for batch
+    const transformedResult = this.transformResponse(data.data);
 
     return transformedResult;
   }

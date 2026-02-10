@@ -9,6 +9,9 @@
  * - If it cannot match, returns null (so you can decide to throw or keep original).
  */
 
+import { DEFAULT_COUNTRY } from '../constants';
+import { ISO_3166_2_COUNTRY_CODES } from './countries-list';
+
 type SectorNumber = 1 | 2 | 3 | 4 | 5 | 6;
 
 export function sanitizeCounty(input: string | null | undefined): string | null {
@@ -188,3 +191,59 @@ const RO_ISO_3166_2_RO_MAP: Map<string, string> = new Map([
   ['vaslui', 'RO-VS'],
   ['vrancea', 'RO-VN'],
 ]);
+
+/**
+ * Get country code by country name
+ * - Accepts country names with or without diacritics, in any case, with common separators (space, dash, dot, underscore).
+ * - If input is already a valid ISO 3166-2 alpha-2 code, it will be returned as is.
+ * - Uses the same normalization as for counties, so "romania", "românia", "romania", "ro-mania" will all match to "RO".
+ * - For unrecognized inputs, returns null (so you can decide to throw or keep original).
+ */
+export function getCountryCodeByInput(input: string): string | null {
+  const normalizedInput = normalizeInput(input);
+  if (!normalizedInput) {
+    return null;
+  }
+
+  const upperInput = input.trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(upperInput)) {
+    const byAlpha2 = ISO_3166_2_COUNTRY_CODES.find((country) => country.alpha2 === upperInput);
+    if (byAlpha2) {
+      return byAlpha2.alpha2;
+    }
+  }
+
+  const country = ISO_3166_2_COUNTRY_CODES.find((country) => normalizeInput(country.name) === normalizedInput);
+  if (country) {
+    return country.alpha2;
+  }
+
+  return null;
+}
+
+/**
+ * Checks if the invoice is internal (Romanian) based on the country name.
+ *
+ * Uses the same normalization as for counties, so "romania", "românia", "romania", "ro-mania" will all be recognized as internal.
+ */
+export function isInternalInvoice(countryName: string): boolean {
+  return normalizeInput(countryName) === normalizeInput(DEFAULT_COUNTRY);
+}
+
+/**
+ * Gets the country from a tax ID if it starts with a valid ISO 3166-2 alpha-2 code.
+ *
+ * For example, "RO12345678" will return "Romania", "DE987654321" will return "Germany".
+ *
+ * @param taxId
+ * @returns
+ */
+export function getCountryFromTaxId(taxId: string): string | null {
+  const countryCode = taxId.trim().substring(0, 2).toUpperCase();
+  const country = ISO_3166_2_COUNTRY_CODES.find((country) => country.alpha2 === countryCode);
+  if (country) {
+    return country.name;
+  }
+
+  return null;
+}

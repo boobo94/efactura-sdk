@@ -1,7 +1,14 @@
 import { UblBuilder } from '../src/UblBuilder';
 import { InvoiceInput } from '../src/types';
 import { mockTestData, testFileUtils, testDataGenerators } from './testUtils';
-import { sanitizeCounty, sanitizeBucharestSector, isBucharest } from '../src/ubl/address-sanitizer';
+import {
+  sanitizeCounty,
+  sanitizeBucharestSector,
+  isBucharest,
+  getCountryCodeByInput,
+  isInternalInvoice,
+  getCountryFromTaxId,
+} from '../src/ubl/address-sanitizer';
 
 describe('UblBuilder Tests', () => {
   let builder: UblBuilder;
@@ -642,6 +649,71 @@ describe('UblBuilder Tests', () => {
         ['' as any, false],
       ])('isBucharest(%p) -> %p', (input, expected) => {
         expect(isBucharest(input as any)).toBe(expected);
+      });
+    });
+
+    describe('getCountryCodeByInput', () => {
+      test.each([
+        ['Romania', 'RO'],
+        ['germany', 'DE'],
+        ['United States of America', 'US'],
+        ['france', 'FR'],
+        ['RO', 'RO'],
+      ])('getCountryCodeByInput(%p) -> %p', (input, expected) => {
+        expect(getCountryCodeByInput(input)).toBe(expected);
+      });
+
+      test.each([
+        ['Atlantis', null],
+        ['', null],
+      ])('getCountryCodeByInput(%p) -> %p', (input, expected) => {
+        expect(getCountryCodeByInput(input)).toBe(expected);
+      });
+    });
+
+    describe('isInternalInvoice', () => {
+      test.each([
+        ['Romania', true],
+        ['romania', true],
+        [' ROMANIA ', true],
+        ['România', true],
+        ['RoMaNiA', true],
+      ])('isInternalInvoice(%p) -> %p', (input, expected) => {
+        expect(isInternalInvoice(input)).toBe(expected);
+      });
+
+      test.each([
+        ['Germany', false],
+        ['France', false],
+        ['RO', false],
+        ['', false],
+        ['   ', false],
+      ])('isInternalInvoice(%p) -> %p', (input, expected) => {
+        expect(isInternalInvoice(input)).toBe(expected);
+      });
+    });
+
+    describe('getCountryFromTaxId', () => {
+      test.each([
+        ['RO123456', 'Romania'],
+        ['de123456', 'Germany'],
+        ['US123456', 'United States of America'],
+        [' fr123456 ', 'France'],
+      ])('getCountryFromTaxId(%p) -> %p', (input, expected) => {
+        expect(getCountryFromTaxId(input)).toBe(expected);
+      });
+
+      test.each([
+        ['RO', 'Romania'],
+        ['FR', 'France'],
+        ['DE', 'Germany'],
+        ['US', 'United States of America'],
+        ['12345678', null],
+        ['R', null],
+        ['', null],
+        ['   ', null],
+      ])('getCountryFromTaxId(%p) -> %p', (input, expected) => {
+        expect(getCountryFromTaxId(input)).toBe(expected);
       });
     });
   });
