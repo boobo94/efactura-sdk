@@ -301,6 +301,13 @@ export enum InvoiceTypeCode {
    * You are not required to provide a reference to the previous invoice. However, we recommend that you do so.
    */
   CREDIT_NOTE = '381',
+
+  /**
+   * Self-billed invoice
+   *
+   * An invoice the invoicee is producing instead of the seller.
+   */
+  SELF_BILLED_INVOICE = '389',
 }
 
 /**
