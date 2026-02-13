@@ -130,7 +130,7 @@ describe('AnafDetailsClient Unit Tests', () => {
         name: 'Test Company SRL',
         registrationNumber: 'J40/1234/2020',
         address: {
-          street: 'Str. Test',
+          street: 'Str. Test Nr. 1, Bucuresti',
           city: 'Bucuresti',
           county: 'MUNICIPIUL BUCURESTI',
           postalZone: '010101',

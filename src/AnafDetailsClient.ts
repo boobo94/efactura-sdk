@@ -107,7 +107,7 @@ export class AnafDetailsClient {
           name: element.date_generale.denumire,
           registrationNumber: element.date_generale.nrRegCom,
           address: {
-            street: element.adresa_sediu_social.sdenumire_Strada,
+            street: element.date_generale.adresa,
             city: element.adresa_sediu_social.sdenumire_Localitate,
             county: element.adresa_sediu_social.sdenumire_Judet,
             postalZone: element.adresa_sediu_social.scod_Postal || '000000',
