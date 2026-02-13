@@ -256,7 +256,7 @@ export interface Address {
   /** County/Region (optional) */
   county?: string;
   /** Country (default: 'Romania') */
-  country?: string;
+  country: string;
 }
 
 /**

@@ -72,6 +72,7 @@ describe('UblBuilder Tests', () => {
             street: 'Str. Testului 123',
             city: 'Bucharest',
             postalZone: '010203',
+            country: 'Romania',
           },
         },
       };
@@ -95,6 +96,7 @@ describe('UblBuilder Tests', () => {
             street: 'Str. Customer 456',
             city: 'Cluj-Napoca',
             postalZone: '400123',
+            country: 'Romania',
           },
         },
       };

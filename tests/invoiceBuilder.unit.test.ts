@@ -17,6 +17,7 @@ const createBaseInvoice = (): InvoiceInput => ({
       city: 'Sector 3',
       county: 'Bucuresti',
       postalZone: '010101',
+      country: 'Romania',
     },
   },
   customer: {
@@ -27,6 +28,7 @@ const createBaseInvoice = (): InvoiceInput => ({
       city: 'Cluj-Napoca',
       county: 'Cluj',
       postalZone: '400000',
+      country: 'Romania',
     },
   },
   lines: [

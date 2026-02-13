@@ -46,6 +46,7 @@ describeIf('AnafEfacturaClient Integration Tests', () => {
         street: 'Str. Test 1',
         city: 'Bucharest',
         postalZone: '010101',
+        country: 'Romania',
       },
     },
     customer: {
@@ -55,6 +56,7 @@ describeIf('AnafEfacturaClient Integration Tests', () => {
         street: 'Str. Customer 2',
         city: 'Cluj-Napoca',
         postalZone: '400001',
+        country: 'Romania',
       },
     },
     lines: [
