@@ -297,6 +297,60 @@ describe('InvoiceBuilder', () => {
       );
     });
 
+    test('PartyTaxScheme cbc:CompanyID has RO prefix for VAT payer with Romanian CIF', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        supplier: {
+          ...createBaseInvoice().supplier,
+          companyId: '160796',
+          isVatPayer: true,
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
+
+      expect(normalizedXml).toContain(
+        '<cac:PartyTaxScheme><cbc:CompanyID>RO160796</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>'
+      );
+    });
+
+    test('PartyLegalEntity cbc:CompanyID strips RO prefix for non-VAT payer when input already has RO', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        supplier: {
+          ...createBaseInvoice().supplier,
+          companyId: 'RO160796',
+          isVatPayer: false,
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
+
+      expect(normalizedXml).toContain(
+        '<cac:PartyLegalEntity><cbc:RegistrationName>SupplierSRL</cbc:RegistrationName><cbc:CompanyID>160796</cbc:CompanyID></cac:PartyLegalEntity>'
+      );
+    });
+
+    test('PartyLegalEntity cbc:CompanyID has no RO prefix for non-VAT payer with plain CIF', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        supplier: {
+          ...createBaseInvoice().supplier,
+          companyId: '160796',
+          isVatPayer: false,
+        },
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+      const normalizedXml = compactXml(xml);
+
+      expect(normalizedXml).toContain(
+        '<cac:PartyLegalEntity><cbc:RegistrationName>SupplierSRL</cbc:RegistrationName><cbc:CompanyID>160796</cbc:CompanyID></cac:PartyLegalEntity>'
+      );
+    });
+
     test('uses companyId in PartyLegalEntity for physical person CNP', () => {
       const invoiceData: InvoiceInput = {
         ...createBaseInvoice(),

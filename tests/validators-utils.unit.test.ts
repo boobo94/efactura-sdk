@@ -86,5 +86,28 @@ describe('Validators Utilities', () => {
       expect(() => normalizeVatNumber('')).toThrow('Company VAT number is missing.');
       expect(() => normalizeVatNumber(null as any)).toThrow('Company VAT number is missing.');
     });
+
+    it('returns CIF without RO prefix when isVatPayer is false', () => {
+      expect(normalizeVatNumber('1000009', false)).toBe('1000009');
+      expect(normalizeVatNumber('RO1000009', false)).toBe('1000009');
+      expect(normalizeVatNumber('ro1000009', false)).toBe('1000009');
+    });
+
+    it('behaves the same as default when isVatPayer is explicitly true', () => {
+      expect(normalizeVatNumber('1000009', true)).toBe('RO1000009');
+      expect(normalizeVatNumber('RO1000009', true)).toBe('RO1000009');
+    });
+
+    it('keeps CNP unchanged regardless of isVatPayer', () => {
+      expect(normalizeVatNumber('1960129460018', false)).toBe('1960129460018');
+      expect(normalizeVatNumber('0000000000000', false)).toBe('0000000000000');
+      expect(normalizeVatNumber('1960129460018', true)).toBe('1960129460018');
+      expect(normalizeVatNumber('0000000000000', true)).toBe('0000000000000');
+    });
+
+    it('keeps invalid CIF unchanged regardless of isVatPayer', () => {
+      expect(normalizeVatNumber('12345678', false)).toBe('12345678');
+      expect(normalizeVatNumber('RO12A34', false)).toBe('RO12A34');
+    });
   });
 });

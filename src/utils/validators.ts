@@ -97,7 +97,7 @@ export function stripTaxIdPrefix(value: string): string {
   return value.replace(/ro/i, '');
 }
 
-export function normalizeVatNumber(value: string): string {
+export function normalizeVatNumber(value: string, isVatPayer: boolean = true): string {
   if (!value) {
     throw new Error('Company VAT number is missing.');
   }
@@ -106,7 +106,9 @@ export function normalizeVatNumber(value: string): string {
   if (isValidCNP(value)) {
     return value;
   } else if (isValidCIF(value)) {
-    return `RO${stripTaxIdPrefix(value)}`;
+    // return the code with RO prefix if it is a valid cif, otherwise return the code as it is
+    const stripped = stripTaxIdPrefix(value);
+    return isVatPayer ? `RO${stripped}` : stripped;
   }
 
   return value;

@@ -38,7 +38,7 @@ interface TaxGroup {
 function buildPartyXml(root: XMLBuilder, tagName: string, party: Party, isSupplierVatPayer: boolean): void {
   const partyElement = root.ele(tagName).ele('cac:Party');
   const address = party.address;
-  const normalizedTaxId = normalizeVatNumber(party.companyId);
+  const normalizedTaxId = normalizeVatNumber(party.companyId, party.isVatPayer);
 
   const countryCode = getCountryCodeByInput(address.country || DEFAULT_COUNTRY);
   let county: string | null = address.county || '';
