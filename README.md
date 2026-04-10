@@ -671,6 +671,7 @@ MIT License - see LICENSE file for details.
 For questions about:
 
 - **ANAF e-Factura API**: Check [ANAF official documentation](https://mfinante.gov.ro/web/efactura/informatii-tehnice)
+- **Limite ANAF e-Factura API**: Check [Limite Apeluri API](ANAF e-Factura API)
 - **This SDK**: Open an issue on GitHub
 - **OAuth Setup**: Consult ANAF SPV documentation: [ANAF official documentation](https://static.anaf.ro/static/10/Anaf/Informatii_R/API/Oauth_procedura_inregistrare_aplicatii_portal_ANAF.pdf)
 - **USB Token Issues**: Contact your certificate provider
