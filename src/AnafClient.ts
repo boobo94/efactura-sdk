@@ -31,6 +31,7 @@ import {
   VALIDATE_XML_OAUTH_URL,
   BASE_PATH_CERT_PROD,
   BASE_PATH_OAUTH_PROD,
+  XML_TO_PDF_OAUTH_URL,
 } from './constants';
 import {
   parseUploadResponse,
@@ -573,7 +574,7 @@ export class AnafEfacturaClient {
     this.validateXmlContent(xmlContent);
     this.validateDocumentStandard(standard);
 
-    const url = `/transformare/${standard}`;
+    const url = `${XML_TO_PDF_OAUTH_URL}/${standard}`;
 
     const { data, error } = tryCatch(async () => {
       const accessToken = await this.getValidAccessToken();
@@ -627,7 +628,7 @@ export class AnafEfacturaClient {
     this.validateXmlContent(xmlContent);
     this.validateDocumentStandard(standard);
 
-    const url = `/transformare/${standard}/DA`;
+    const url = `${XML_TO_PDF_OAUTH_URL}/${standard}/DA`;
 
     const { data, error } = tryCatch(async () => {
       const accessToken = await this.getValidAccessToken();
