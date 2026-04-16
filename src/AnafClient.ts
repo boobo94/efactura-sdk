@@ -351,8 +351,10 @@ export class AnafEfacturaClient {
   public async getMessagesPaginated(params: PaginatedMessagesParams): Promise<PaginatedListMessagesResponse> {
     this.validatePaginatedMessagesParams(params);
 
+    const normalizedTaxId = stripTaxIdPrefix(this.config.vatNumber);
+
     const queryParams = buildPaginatedMessagesParams(
-      this.config.vatNumber,
+      normalizedTaxId,
       params.startTime,
       params.endTime,
       params.pagina,
@@ -399,7 +401,9 @@ export class AnafEfacturaClient {
   public async getMessages(params: ListMessagesParams): Promise<ListMessagesResponse> {
     this.validateListMessagesParams(params);
 
-    const queryParams = buildListMessagesParams(this.config.vatNumber, params.zile, params.filtru);
+    const normalizedTaxId = stripTaxIdPrefix(this.config.vatNumber);
+
+    const queryParams = buildListMessagesParams(normalizedTaxId, params.zile, params.filtru);
     const url = `${LIST_MESSAGES_PATH}?${queryParams.toString()}`;
 
     const { data, error } = tryCatch(async () => {

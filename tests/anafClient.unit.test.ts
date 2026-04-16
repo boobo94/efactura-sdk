@@ -592,6 +592,25 @@ describe('AnafEfacturaClient Unit Tests', () => {
       expect(result).toBeDefined();
     });
 
+    test('should strip the RO prefix before requesting recent messages', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) => (name === 'content-type' ? 'application/json' : null),
+        },
+        json: () => Promise.resolve({ messages: [] }),
+      });
+
+      await client.getMessages({ zile: 7 });
+
+      const requestUrl = (fetch as jest.Mock).mock.calls[0][0] as string;
+
+      expect(requestUrl).toContain('/listaMesajeFactura');
+      expect(requestUrl).toContain('cif=12345678');
+      expect(requestUrl).not.toContain('cif=RO12345678');
+    });
+
     test('should get paginated messages successfully', async () => {
       const params: PaginatedMessagesParams = {
         startTime: Date.now() - 86400000,
@@ -611,6 +630,31 @@ describe('AnafEfacturaClient Unit Tests', () => {
       const result = await client.getMessagesPaginated(params);
 
       expect(result).toBeDefined();
+    });
+
+    test('should strip the RO prefix before requesting paginated messages', async () => {
+      const params: PaginatedMessagesParams = {
+        startTime: Date.now() - 86400000,
+        endTime: Date.now(),
+        pagina: 1,
+      };
+
+      (fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) => (name === 'content-type' ? 'application/json' : null),
+        },
+        json: () => Promise.resolve({ messages: [] }),
+      });
+
+      await client.getMessagesPaginated(params);
+
+      const requestUrl = (fetch as jest.Mock).mock.calls[0][0] as string;
+
+      expect(requestUrl).toContain('/listaMesajePaginatieFactura');
+      expect(requestUrl).toContain('cif=12345678');
+      expect(requestUrl).not.toContain('cif=RO12345678');
     });
 
     test('should parse simple list response matching OpenAPI schema', async () => {
