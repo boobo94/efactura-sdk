@@ -378,10 +378,14 @@ export function buildInvoiceXml(input: InvoiceInput): string {
     .up()
     .ele('cbc:InvoiceTypeCode')
     .txt(invoiceTypeCode)
-    .up()
-    .ele('cbc:DocumentCurrencyCode')
-    .txt(currency)
     .up();
+
+  // Add mentions if provided
+  if (input.mentions) {
+    root.ele('cbc:Note').txt(input.mentions).up();
+  }
+
+  root.ele('cbc:DocumentCurrencyCode').txt(currency).up();
 
   // Parties
   buildPartyXml(root, 'cac:AccountingSupplierParty', input.supplier, isSupplierVatPayer);

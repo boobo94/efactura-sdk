@@ -352,6 +352,8 @@ export interface InvoiceInput {
   lines: InvoiceLine[];
   /** Payment IBAN (optional) */
   paymentIban?: string;
+  /** Financial mentions added in the footer (optional) */
+  mentions?: string;
 }
 
 /**

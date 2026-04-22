@@ -351,6 +351,27 @@ describe('InvoiceBuilder', () => {
       );
     });
 
+    test('includes cbc:Note when mentions is provided', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+        mentions: 'Payment due within 30 days. Bank: BCR.',
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+
+      expect(xml).toContain('<cbc:Note>Payment due within 30 days. Bank: BCR.</cbc:Note>');
+    });
+
+    test('omits cbc:Note when mentions is not provided', () => {
+      const invoiceData: InvoiceInput = {
+        ...createBaseInvoice(),
+      };
+
+      const xml = buildInvoiceXml(invoiceData);
+
+      expect(xml).not.toContain('<cbc:Note>');
+    });
+
     test('uses companyId in PartyLegalEntity for physical person CNP', () => {
       const invoiceData: InvoiceInput = {
         ...createBaseInvoice(),
