@@ -157,7 +157,7 @@ const RO_ISO_3166_2_RO_MAP: Map<string, string> = new Map([
   ['caras severin', 'RO-CS'],
   ['carasseverin', 'RO-CS'],
   ['caras-severin', 'RO-CS'],
-  ['calaras', 'RO-CL'],
+  ['calarasi', 'RO-CL'],
   ['cluj', 'RO-CJ'],
   ['constanta', 'RO-CT'],
   ['covasna', 'RO-CV'],
